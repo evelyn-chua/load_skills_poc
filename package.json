@@ -1,0 +1,29 @@
+{
+  "name": "chat-agent",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A standalone chat agent extracted from Voice Agent Studio: threads over an HTTP API, server-run tools.",
+  "type": "module",
+  "engines": {
+    "node": ">=22.9"
+  },
+  "scripts": {
+    "dev": "tsx watch --env-file-if-exists=.env src/main.ts",
+    "start": "tsx --env-file-if-exists=.env src/main.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@ai-sdk/openai": "^4.0.109",
+    "@hono/node-server": "^2.1.6",
+    "ai": "^7.0.163",
+    "hono": "^4.13.16",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3",
+    "vitest": "^5.1.0"
+  }
+}
