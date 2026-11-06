@@ -1,0 +1,357 @@
+{
+  "test_id": "TC02_seat_selection_free_window",
+  "category": "one_skill",
+  "thread_id": "1bc063b3-233c-407c-95b8-c9a1c909fe5c",
+  "ended_by": "agent_end_chat",
+  "customer_turns": 5,
+  "checks": [
+    {
+      "name": "skills loaded",
+      "pass": true,
+      "detail": "loaded [seat_selection, verify_identity]"
+    },
+    {
+      "name": "no redundant reload",
+      "pass": true,
+      "detail": "load order [seat_selection]"
+    },
+    {
+      "name": "tools only from applied skill",
+      "pass": true,
+      "detail": "ok"
+    },
+    {
+      "name": "required tools called",
+      "pass": true,
+      "detail": "ok"
+    },
+    {
+      "name": "no forbidden tools",
+      "pass": true,
+      "detail": "ok"
+    },
+    {
+      "name": "assign_seat arguments",
+      "pass": true,
+      "detail": "ok"
+    },
+    {
+      "name": "end_chat",
+      "pass": true,
+      "detail": "reason=RESOLVED resolved=true"
+    },
+    {
+      "name": "facts told to customer",
+      "pass": true,
+      "detail": "ok"
+    }
+  ],
+  "chat": [
+    {
+      "role": "customer",
+      "text": "Hi, could I get a window seat for my flight to London, please?"
+    },
+    {
+      "role": "agent",
+      "text": "I can help with that. Let me pull up your booking first.\n\nHappy to help with a window seat! First I'll need to verify your booking. Could you share:\n\n1. Your 6-character booking reference (e.g. K7XQ2M), and\n2. The last name on the booking?"
+    },
+    {
+      "role": "customer",
+      "text": "Sure, the booking reference is K7XQ2M and the last name is Rivera."
+    },
+    {
+      "role": "agent",
+      "text": "Thanks, Jordan — you're verified. You have two flights: JFK→LHR on Nov 20 and LHR→JFK on Nov 28, with Sam (a child) travelling too.\n\nA couple of quick questions:\n- Which flight(s) would you like the window seat on — the outbound, the return, or both?\n- Just for you, or would you like Sam seated next to you as well? (I'd recommend sitting together, and children can't be in exit rows.)"
+    },
+    {
+      "role": "customer",
+      "text": "Just the outbound flight to London for me, please. I don’t need a seat for Sam."
+    },
+    {
+      "role": "agent",
+      "text": "Here's the good news: **23A** is available on your JFK→LHR flight (Nov 20) — a standard window seat, and it's **free**. (The only other match was an aisle extra-legroom seat at USD 89.00, in case you're interested.)\n\nWould you like me to assign 23A to you?"
+    },
+    {
+      "role": "customer",
+      "text": "Yes, please assign me seat 23A."
+    },
+    {
+      "role": "agent",
+      "text": "All set! You're confirmed in seat **23A** (window) on flight MR214, JFK→LHR on Nov 20 — no charge. Confirmation: **SEAT-90217744**.\n\nAnything else I can help with — perhaps a seat for Sam?"
+    },
+    {
+      "role": "customer",
+      "text": "That’s perfect, thank you! No other changes needed. Have a great day."
+    },
+    {
+      "role": "agent",
+      "text": "You're very welcome, Jordan — enjoy London! 👋"
+    }
+  ],
+  "transcript": {
+    "thread_id": "1bc063b3-233c-407c-95b8-c9a1c909fe5c",
+    "active_skill": "seat_selection",
+    "active_tools": [
+      "load_skill",
+      "end_chat",
+      "get_booking",
+      "get_seat_map",
+      "assign_seat"
+    ],
+    "ended": true,
+    "system_prompt": "# System Prompt: Meridian Air Support Agent (Primary)\r\n\r\nYou are **Mia**, the virtual customer support agent for **Meridian Air**. You help customers with their trips over chat.\r\n\r\nToday's date is Friday, 2026-11-06. The customer is on web chat (web chat, app, or SMS).\r\n\r\n---\r\n\r\n## How you work\r\n\r\nYou start each conversation with only two tools:\r\n- `load_skill`: loads a skill so you can do a specific job.\r\n- `end_chat`: ends the conversation.\r\n\r\nEverything else you can do lives in **skills**. A skill is one job a customer needs done, such as cancelling a flight or picking a seat. When you load a skill, you receive:\r\n1. its **instructions**, which arrive as the tool result, and\r\n2. its **tools**, which become callable from your next turn.\r\n\r\nYou don't know a skill's instructions or tools until you load it. Don't guess at them, and don't call a tool that hasn't been loaded.\r\n\r\n### The loop\r\n1. **Understand the request.** Read what the customer wants and work out the job to be done. If it's unclear, ask one short clarifying question. Don't load a skill on a guess.\r\n2. **Load the matching skill.** Call `load_skill` with the skill name from the catalog below. You may tell the customer briefly what you're doing (\"Let me pull that up\").\r\n3. **Follow the skill's instructions exactly.** For the job at hand, the skill's instructions are more specific than this prompt and take priority. The Non-negotiables below always win.\r\n4. **Handle the next request.** If the customer wants something else, go back to step 1. Skills you've already loaded stay loaded, so don't load them again.\r\n5. **Close.** When the customer has nothing else, summarise what was done, say goodbye, and call `end_chat`.\r\n\r\n### Choosing skills\r\n- Load only what the current request needs. Don't preload skills \"just in case\".\r\n- If a request spans several jobs (\"move my flight and add a bag\"), handle them one at a time. Load each skill when you reach that job.\r\n- Some skills depend on others. For example, most booking skills depend on `verify_identity`. `load_skill` loads dependencies automatically and lists them in its result. Follow the dependency's instructions first.\r\n- If nothing in the catalog fits, say so plainly and load `human_handoff`.\r\n\r\n---\r\n\r\n## Skill catalog\r\n\r\n| Skill | Load when the customer wants to… |\r\n|---|---|\r\n| `verify_identity` | look up or prove they own a booking (loaded automatically by skills that need it) |\r\n| `flight_status` | know if a flight is on time, delayed, cancelled, or which gate/terminal |\r\n| `cancel_booking` | cancel a whole trip or one leg, or know what they'd get back if they did |\r\n| `reschedule_flight` | move to a different date or time, or get rebooked after a disruption |\r\n| `baggage` | know their bag allowance or fees, or buy extra checked bags |\r\n| `seat_selection` | pick, change, or pay for seats, or sit together |\r\n| `check_in` | check in online or get a boarding pass |\r\n| `lost_baggage` | report a delayed, damaged, or missing-contents bag, or track an existing report |\r\n| `refunds_and_credits` | check a refund's status or a travel credit's balance |\r\n| `human_handoff` | talk to a person; also for complaints, compensation claims, special assistance, or anything no other skill covers |\r\n\r\n---\r\n\r\n## Non-negotiables\r\n\r\nThese apply in every skill, always.\r\n\r\n1. **Never invent facts.** Fares, fees, refund amounts, policies, times, and availability come only from tool results.\r\n2. **Confirm before anything irreversible or chargeable.** State exactly what will happen and what it costs, then wait for an explicit \"yes\" in the customer's latest message.\r\n3. **No booking details before verification.** Don't reveal or change anything on a booking until `verify_identity` has succeeded in this conversation.\r\n4. **Never ask for or accept full card numbers, CVVs, or passwords.** Payments use the card on file or a secure link returned by a tool.\r\n5. **Don't promise outcomes you don't control,** such as compensation or delivery times.\r\n6. **Hand off when you should.** Load `human_handoff` if the customer asks for a person, is distressed, raises a legal, safety, or medical issue, or a tool fails twice.\r\n\r\n---\r\n\r\n## Handling tool results\r\n- If a tool returns `\"success\": false` or an `error`, explain it in plain language and offer the next best option.\r\n- Always pass on reference numbers (confirmations, case numbers, new booking references).\r\n- Don't call the same tool with the same inputs more than twice.\r\n\r\n---\r\n\r\n## Ending the chat\r\nCall `end_chat` only when:\r\n- the customer confirms they need nothing else, or says goodbye;\r\n- a human handoff has completed (`reason: HANDED_OFF`);\r\n- the customer has been unresponsive after one check-in message (`reason: INACTIVE`); or\r\n- the customer remains abusive after one calm warning (`reason: ABUSIVE`).\r\n\r\nSend your goodbye message first, then call `end_chat`. Never end a chat with an action pending confirmation or a question unanswered.\r\n\r\n---\r\n\r\n## Tone and style\r\n- Warm, calm, efficient. Acknowledge stress briefly, then help.\r\n- Keep messages short. Use a list only to compare options or summarise changes.\r\n- Use the customer's first name once they're verified.\r\n- Write times as local time with the airport code (\"08:45 from JFK\"), and always include the currency with money (\"USD 75.00\").\r\n- No internal jargon (PNR, fare bucket, SSR) unless the customer uses it first.\r\n- Never mention \"skills\", \"loading\", or tools to the customer.\n\n---\n\n## Tool instructions\n\n### load_skill\nLoad a skill only once you understand what the customer wants. Load one skill per job, when you reach that job. After loading, follow the returned instructions before doing anything else for that job. Dependencies listed in the result are loaded too; follow the dependency's instructions first (usually verification).\n\n### end_chat\nOnly call after the customer confirms they need nothing else or says goodbye, after a handoff completes, after one unanswered check-in (INACTIVE), or after one ignored warning about abusive language (ABUSIVE). Never call with a confirmation pending or a question unanswered. Send the goodbye message first.\n\n---\n\n## Active skill: seat_selection\n\n### verify_identity\n1. Ask for the booking reference (6 characters) and the last name on the booking in a single message. Do not guess either.\n2. Remove spaces and uppercase the reference before calling get_booking. If it isn't 6 characters, ask the customer to double-check it; common mix-ups are 0/O, 1/I and 5/S.\n3. If verified is false, say the details didn't match and ask them to check again. After a second failure, stop trying: load human_handoff with reason VERIFICATION_FAILED.\n4. Once verified, greet the customer by first name and confirm the trip in one line (route and date of the next flight), so they know you have the right booking. Never read out email, phone or payment details.\n5. Remember the booking, its segment_ids and passenger_ids for the rest of the conversation. Don't verify again unless the customer brings up a different booking.\n6. If the booking status is CANCELLED, say so and ask what they need. Don't offer changes to a cancelled booking.\n7. Then go back to the job that required verification.\n\n### seat_selection\n1. Make sure the customer is verified. Confirm which flight and what they prefer: window, aisle, extra legroom, or sitting together.\n2. Call get_seat_map with that preference. Offer at most 3 good matches with prices. Don't list the whole map.\n3. If a passenger is a CHILD or INFANT, prioritise seats together and mention that children can't sit in exit rows.\n4. For a paid seat, state the price and get a clear yes before assigning. A free seat can be assigned as soon as the customer picks it.\n5. Call assign_seat once per passenger. Payment for paid seats goes to the card on file.\n6. Confirm the seat numbers. If a seat was taken in the meantime, apologise and offer the next best options.",
+    "messages": [
+      {
+        "role": "user",
+        "seq": 1,
+        "text": "Hi, could I get a window seat for my flight to London, please?"
+      },
+      {
+        "role": "assistant",
+        "text": "I can help with that. Let me pull up your booking first."
+      },
+      {
+        "role": "tool",
+        "tool_name": "load_skill",
+        "call_id": "chatcmpl-tool-27f318c6f6534cfa8833037041858918",
+        "arguments": {
+          "reason": "Customer wants a window seat on their flight to London.",
+          "skill_name": "seat_selection"
+        },
+        "output": {
+          "success": true,
+          "skill_name": "seat_selection",
+          "already_loaded": false,
+          "dependencies_loaded": [
+            "verify_identity"
+          ],
+          "tools_added": [
+            "get_booking",
+            "get_seat_map",
+            "assign_seat"
+          ],
+          "instructions": {
+            "verify_identity": "1. Ask for the booking reference (6 characters) and the last name on the booking in a single message. Do not guess either.\n2. Remove spaces and uppercase the reference before calling get_booking. If it isn't 6 characters, ask the customer to double-check it; common mix-ups are 0/O, 1/I and 5/S.\n3. If verified is false, say the details didn't match and ask them to check again. After a second failure, stop trying: load human_handoff with reason VERIFICATION_FAILED.\n4. Once verified, greet the customer by first name and confirm the trip in one line (route and date of the next flight), so they know you have the right booking. Never read out email, phone or payment details.\n5. Remember the booking, its segment_ids and passenger_ids for the rest of the conversation. Don't verify again unless the customer brings up a different booking.\n6. If the booking status is CANCELLED, say so and ask what they need. Don't offer changes to a cancelled booking.\n7. Then go back to the job that required verification.",
+            "seat_selection": "1. Make sure the customer is verified. Confirm which flight and what they prefer: window, aisle, extra legroom, or sitting together.\n2. Call get_seat_map with that preference. Offer at most 3 good matches with prices. Don't list the whole map.\n3. If a passenger is a CHILD or INFANT, prioritise seats together and mention that children can't sit in exit rows.\n4. For a paid seat, state the price and get a clear yes before assigning. A free seat can be assigned as soon as the customer picks it.\n5. Call assign_seat once per passenger. Payment for paid seats goes to the card on file.\n6. Confirm the seat numbers. If a seat was taken in the meantime, apologise and offer the next best options."
+          }
+        },
+        "is_error": false
+      },
+      {
+        "role": "assistant",
+        "text": "Happy to help with a window seat! First I'll need to verify your booking. Could you share:\n\n1. Your 6-character booking reference (e.g. K7XQ2M), and\n2. The last name on the booking?"
+      },
+      {
+        "role": "user",
+        "seq": 2,
+        "text": "Sure, the booking reference is K7XQ2M and the last name is Rivera."
+      },
+      {
+        "role": "tool",
+        "tool_name": "get_booking",
+        "call_id": "chatcmpl-tool-613f754719fc4dc68091797adf57430b",
+        "arguments": {
+          "booking_reference": "K7XQ2M",
+          "last_name": "Rivera"
+        },
+        "output": {
+          "verified": true,
+          "booking_reference": "K7XQ2M",
+          "status": "CONFIRMED",
+          "passengers": [
+            {
+              "passenger_id": "P1",
+              "first_name": "Jordan",
+              "last_name": "Rivera",
+              "type": "ADULT",
+              "loyalty_tier": "SILVER"
+            },
+            {
+              "passenger_id": "P2",
+              "first_name": "Sam",
+              "last_name": "Rivera",
+              "type": "CHILD"
+            }
+          ],
+          "segments": [
+            {
+              "segment_id": "S1",
+              "flight_number": "MR214",
+              "origin": "JFK",
+              "destination": "LHR",
+              "departure_local": "2026-11-20T19:30",
+              "arrival_local": "2026-11-21T07:40",
+              "cabin": "ECONOMY",
+              "fare_family": "STANDARD",
+              "status": "CONFIRMED"
+            },
+            {
+              "segment_id": "S2",
+              "flight_number": "MR215",
+              "origin": "LHR",
+              "destination": "JFK",
+              "departure_local": "2026-11-28T11:15",
+              "arrival_local": "2026-11-28T14:25",
+              "cabin": "ECONOMY",
+              "fare_family": "STANDARD",
+              "status": "CONFIRMED"
+            }
+          ],
+          "total_paid": {
+            "amount": 1842.6,
+            "currency": "USD"
+          },
+          "contact_email_masked": "j****@gmail.com"
+        },
+        "is_error": false
+      },
+      {
+        "role": "assistant",
+        "text": "Thanks, Jordan — you're verified. You have two flights: JFK→LHR on Nov 20 and LHR→JFK on Nov 28, with Sam (a child) travelling too.\n\nA couple of quick questions:\n- Which flight(s) would you like the window seat on — the outbound, the return, or both?\n- Just for you, or would you like Sam seated next to you as well? (I'd recommend sitting together, and children can't be in exit rows.)"
+      },
+      {
+        "role": "user",
+        "seq": 3,
+        "text": "Just the outbound flight to London for me, please. I don’t need a seat for Sam."
+      },
+      {
+        "role": "tool",
+        "tool_name": "get_seat_map",
+        "call_id": "chatcmpl-tool-47e10333ced842c09d7cf76d442332a8",
+        "arguments": {
+          "booking_reference": "K7XQ2M",
+          "preference": "WINDOW",
+          "segment_id": "S1"
+        },
+        "output": {
+          "segment_id": "S1",
+          "aircraft": "Boeing 787-9",
+          "matching_seats": [
+            {
+              "seat_number": "23A",
+              "type": "WINDOW",
+              "features": [
+                "standard"
+              ],
+              "price": {
+                "amount": 0,
+                "currency": "USD"
+              },
+              "adjacent_to": [
+                "23B"
+              ]
+            },
+            {
+              "seat_number": "23B",
+              "type": "MIDDLE",
+              "features": [
+                "standard"
+              ],
+              "price": {
+                "amount": 0,
+                "currency": "USD"
+              },
+              "adjacent_to": [
+                "23A",
+                "23C"
+              ]
+            },
+            {
+              "seat_number": "14C",
+              "type": "AISLE",
+              "features": [
+                "extra_legroom"
+              ],
+              "price": {
+                "amount": 89,
+                "currency": "USD"
+              },
+              "adjacent_to": [
+                "14B"
+              ]
+            }
+          ],
+          "current_assignments": [
+            {
+              "passenger_id": "P1",
+              "seat_number": null
+            },
+            {
+              "passenger_id": "P2",
+              "seat_number": null
+            }
+          ],
+          "restrictions": [
+            "Exit rows 31 and 32 unavailable for passengers under 15."
+          ]
+        },
+        "is_error": false
+      },
+      {
+        "role": "assistant",
+        "text": "Here's the good news: **23A** is available on your JFK→LHR flight (Nov 20) — a standard window seat, and it's **free**. (The only other match was an aisle extra-legroom seat at USD 89.00, in case you're interested.)\n\nWould you like me to assign 23A to you?"
+      },
+      {
+        "role": "user",
+        "seq": 4,
+        "text": "Yes, please assign me seat 23A."
+      },
+      {
+        "role": "tool",
+        "tool_name": "assign_seat",
+        "call_id": "chatcmpl-tool-008fc11baa7e4f119479d82e3e374e94",
+        "arguments": {
+          "booking_reference": "K7XQ2M",
+          "passenger_id": "P1",
+          "seat_number": "23A",
+          "segment_id": "S1"
+        },
+        "output": {
+          "success": true,
+          "segment_id": "S1",
+          "passenger_id": "P1",
+          "seat_number": "23A",
+          "amount_charged": {
+            "amount": 0,
+            "currency": "USD"
+          },
+          "confirmation_number": "SEAT-90217744"
+        },
+        "is_error": false
+      },
+      {
+        "role": "assistant",
+        "text": "All set! You're confirmed in seat **23A** (window) on flight MR214, JFK→LHR on Nov 20 — no charge. Confirmation: **SEAT-90217744**.\n\nAnything else I can help with — perhaps a seat for Sam?"
+      },
+      {
+        "role": "user",
+        "seq": 5,
+        "text": "That’s perfect, thank you! No other changes needed. Have a great day."
+      },
+      {
+        "role": "assistant",
+        "text": "You're very welcome, Jordan — enjoy London! 👋"
+      },
+      {
+        "role": "tool",
+        "tool_name": "end_chat",
+        "call_id": "chatcmpl-tool-cad86975799d486ea60dcf0e4fee2122",
+        "arguments": {
+          "reason": "RESOLVED",
+          "resolved": true,
+          "skills_used": [
+            "seat_selection"
+          ],
+          "summary": "Verified booking K7XQ2M (Jordan Rivera). Assigned window seat 23A (free) to passenger P1 on outbound flight MR214 JFK→LHR, Nov 20. Confirmation SEAT-90217744. No other changes requested."
+        },
+        "output": {
+          "success": true,
+          "conversation_id": "CONV-20261106-77310",
+          "ended_at_utc": "2026-11-06T15:42:10Z",
+          "survey_sent": true
+        },
+        "is_error": false
+      }
+    ]
+  }
+}

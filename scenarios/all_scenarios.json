@@ -1,0 +1,739 @@
+{
+  "suite_name": "meridian_air_customer_simulator_v1",
+  "suite_version": "1.0",
+  "created_at": "2026-11-06",
+  "default_max_turns": 20,
+  "default_simulator_model": "gpt-4.1-mini",
+  "default_simulator_temperature": 0.5,
+  "shared_private_facts": {
+    "customer_name": "Jordan Rivera",
+    "booking_reference": "K7XQ2M",
+    "last_name": "Rivera",
+    "passenger_id": "P1",
+    "child_passenger_id": "P2",
+    "child_passenger_name": "Sam Rivera",
+    "outbound_flight_number": "MR214",
+    "outbound_flight_date": "2026-11-20",
+    "outbound_segment_id": "S1",
+    "return_flight_number": "MR215",
+    "return_flight_date": "2026-11-28",
+    "return_segment_id": "S2",
+    "bag_tag_number": "1234567890",
+    "bag_description": "Navy hard-shell Samsonite suitcase with a red ribbon",
+    "delivery_address": "The Langham, 1C Portland Place, London W1B 1JA",
+    "contact_phone": "+44 7700 900123",
+    "email_on_file": "j****@gmail.com"
+  },
+  "scenarios": [
+    {
+      "test_id": "TC01_flight_status",
+      "category": "one_skill",
+      "max_turns": 12,
+      "persona": {
+        "name": "Jordan Rivera",
+        "style": "Polite, direct, wants a quick answer"
+      },
+      "private_facts": {
+        "flight_number": "MR214",
+        "flight_date": "2026-11-20"
+      },
+      "goals": [
+        "Ask whether flight MR214 from JFK to LHR on 20 November 2026 is delayed.",
+        "If the agent provides a status, ask which gate the flight is departing from.",
+        "After receiving the status and gate information, thank the agent and end the chat."
+      ],
+      "end_condition": "End after receiving the flight status and gate information.",
+      "confirmation_policy": {
+        "allow_rebooking": false,
+        "allow_cancellation": false,
+        "allow_baggage_purchase": false,
+        "allow_paid_seat_assignment": false
+      },
+      "evaluation": {
+        "expected_skills": ["flight_status"],
+        "required_tools": ["get_flight_status"],
+        "forbidden_tools": [
+          "get_booking",
+          "get_cancellation_quote",
+          "cancel_segments",
+          "search_alternative_flights",
+          "rebook_segment",
+          "get_baggage_allowance",
+          "quote_extra_bags",
+          "purchase_extra_bags",
+          "get_seat_map",
+          "assign_seat",
+          "get_check_in_eligibility",
+          "check_in_passengers",
+          "send_boarding_passes",
+          "file_baggage_report",
+          "get_refund_status",
+          "get_travel_credits"
+        ],
+        "expected_end_chat": {
+          "reason": "RESOLVED",
+          "resolved": true
+        },
+        "expected_facts_in_final_response": [
+          "MR214",
+          "95 minutes",
+          "B32"
+        ]
+      }
+    },
+    {
+      "test_id": "TC02_seat_selection_free_window",
+      "category": "one_skill",
+      "max_turns": 16,
+      "persona": {
+        "name": "Jordan Rivera",
+        "style": "Friendly, decisive, prefers a window seat"
+      },
+      "private_facts": {
+        "booking_reference": "K7XQ2M",
+        "last_name": "Rivera",
+        "passenger_id": "P1",
+        "outbound_segment_id": "S1",
+        "seat_preference": "WINDOW",
+        "preferred_seat": "23A"
+      },
+      "goals": [
+        "Ask for a window seat on your flight to London.",
+        "When asked for booking details, provide booking reference K7XQ2M and last name Rivera.",
+        "If the agent offers seat 23A, choose it.",
+        "Confirm the seat assignment if asked.",
+        "After receiving confirmation, thank the agent and end the chat."
+      ],
+      "end_condition": "End after seat 23A is assigned and confirmed.",
+      "confirmation_policy": {
+        "allow_rebooking": false,
+        "allow_cancellation": false,
+        "allow_baggage_purchase": false,
+        "allow_paid_seat_assignment": false,
+        "allow_free_seat_assignment": true
+      },
+      "evaluation": {
+        "expected_skills": ["seat_selection", "verify_identity"],
+        "required_tools": [
+          "get_booking",
+          "get_seat_map",
+          "assign_seat"
+        ],
+        "forbidden_tools": [
+          "get_cancellation_quote",
+          "cancel_segments",
+          "search_alternative_flights",
+          "rebook_segment",
+          "quote_extra_bags",
+          "purchase_extra_bags",
+          "check_in_passengers",
+          "file_baggage_report"
+        ],
+        "expected_end_chat": {
+          "reason": "RESOLVED",
+          "resolved": true
+        },
+        "expected_tool_arguments": {
+          "assign_seat": {
+            "booking_reference": "K7XQ2M",
+            "segment_id": "S1",
+            "passenger_id": "P1",
+            "seat_number": "23A"
+          }
+        },
+        "expected_facts_in_final_response": [
+          "23A",
+          "SEAT-90217744"
+        ]
+      }
+    },
+    {
+      "test_id": "TC03_baggage_allowance",
+      "category": "one_skill",
+      "max_turns": 14,
+      "persona": {
+        "name": "Jordan Rivera",
+        "style": "Calm, practical, does not want to buy anything"
+      },
+      "private_facts": {
+        "booking_reference": "K7XQ2M",
+        "last_name": "Rivera",
+        "passenger_id": "P1",
+        "child_passenger_id": "P2"
+      },
+      "goals": [
+        "Ask how many checked bags you are allowed to bring.",
+        "When asked for booking details, provide booking reference K7XQ2M and last name Rivera.",
+        "Listen to the allowance for both passengers.",
+        "If the agent offers to sell an extra bag, politely decline.",
+        "Thank the agent and end the chat."
+      ],
+      "end_condition": "End after receiving the checked-bag allowance and confirming no purchase is needed.",
+      "confirmation_policy": {
+        "allow_rebooking": false,
+        "allow_cancellation": false,
+        "allow_baggage_purchase": false,
+        "allow_paid_seat_assignment": false
+      },
+      "evaluation": {
+        "expected_skills": ["baggage", "verify_identity"],
+        "required_tools": [
+          "get_booking",
+          "get_baggage_allowance"
+        ],
+        "forbidden_tools": [
+          "quote_extra_bags",
+          "purchase_extra_bags",
+          "get_cancellation_quote",
+          "cancel_segments",
+          "search_alternative_flights",
+          "rebook_segment",
+          "assign_seat",
+          "check_in_passengers",
+          "file_baggage_report"
+        ],
+        "expected_end_chat": {
+          "reason": "RESOLVED",
+          "resolved": true
+        },
+        "expected_facts_in_final_response": [
+          "2",
+          "23 kg",
+          "50 lb"
+        ]
+      }
+    },
+    {
+      "test_id": "TC04_check_in_primary_passenger",
+      "category": "one_skill",
+      "max_turns": 18,
+      "persona": {
+        "name": "Jordan Rivera",
+        "style": "Efficient, wants to check in quickly"
+      },
+      "private_facts": {
+        "booking_reference": "K7XQ2M",
+        "last_name": "Rivera",
+        "passenger_id": "P1",
+        "outbound_segment_id": "S1",
+        "boarding_pass_delivery": "EMAIL"
+      },
+      "goals": [
+        "Ask to check in for your trip.",
+        "When asked for booking details, provide booking reference K7XQ2M and last name Rivera.",
+        "When asked which passenger to check in, say only yourself.",
+        "When asked how to receive the boarding pass, choose email.",
+        "After receiving confirmation, thank the agent and end the chat."
+      ],
+      "end_condition": "End after your boarding pass has been sent by email.",
+      "confirmation_policy": {
+        "allow_rebooking": false,
+        "allow_cancellation": false,
+        "allow_baggage_purchase": false,
+        "allow_paid_seat_assignment": false,
+        "allow_check_in_for_self": true
+      },
+      "evaluation": {
+        "expected_skills": ["check_in", "verify_identity"],
+        "required_tools": [
+          "get_booking",
+          "get_check_in_eligibility",
+          "check_in_passengers",
+          "send_boarding_passes"
+        ],
+        "forbidden_tools": [
+          "get_cancellation_quote",
+          "cancel_segments",
+          "search_alternative_flights",
+          "rebook_segment",
+          "quote_extra_bags",
+          "purchase_extra_bags",
+          "assign_seat",
+          "file_baggage_report"
+        ],
+        "expected_tool_arguments": {
+          "check_in_passengers": {
+            "booking_reference": "K7XQ2M",
+            "segment_id": "S1",
+            "passenger_ids": ["P1"]
+          },
+          "send_boarding_passes": {
+            "booking_reference": "K7XQ2M",
+            "segment_id": "S1",
+            "passenger_ids": ["P1"],
+            "delivery": "EMAIL"
+          }
+        },
+        "expected_end_chat": {
+          "reason": "RESOLVED",
+          "resolved": true
+        },
+        "expected_facts_in_final_response": [
+          "P1",
+          "boarding group 4",
+          "B32"
+        ]
+      }
+    },
+    {
+      "test_id": "TC05_refund_status",
+      "category": "one_skill",
+      "max_turns": 14,
+      "persona": {
+        "name": "Jordan Rivera",
+        "style": "Patient, wants a clear refund update"
+      },
+      "private_facts": {
+        "booking_reference": "K7XQ2M",
+        "last_name": "Rivera"
+      },
+      "goals": [
+        "Ask whether your refund has been processed.",
+        "When asked for booking details, provide booking reference K7XQ2M and last name Rivera.",
+        "Listen to the refund status.",
+        "If the agent asks whether you need anything else, say no.",
+        "Thank the agent and end the chat."
+      ],
+      "end_condition": "End after receiving the refund status.",
+      "confirmation_policy": {
+        "allow_rebooking": false,
+        "allow_cancellation": false,
+        "allow_baggage_purchase": false,
+        "allow_paid_seat_assignment": false
+      },
+      "evaluation": {
+        "expected_skills": ["refunds_and_credits", "verify_identity"],
+        "required_tools": [
+          "get_booking",
+          "get_refund_status"
+        ],
+        "forbidden_tools": [
+          "get_travel_credits",
+          "get_cancellation_quote",
+          "cancel_segments",
+          "search_alternative_flights",
+          "rebook_segment",
+          "quote_extra_bags",
+          "purchase_extra_bags",
+          "assign_seat",
+          "check_in_passengers",
+          "file_baggage_report"
+        ],
+        "expected_end_chat": {
+          "reason": "RESOLVED",
+          "resolved": true
+        },
+        "expected_facts_in_final_response": [
+          "CXL-87990215",
+          "USD 412.30",
+          "12 November 2026"
+        ]
+      }
+    },
+    {
+      "test_id": "TC06_reschedule_then_seat_selection",
+      "category": "two_skills",
+      "max_turns": 24,
+      "persona": {
+        "name": "Jordan Rivera",
+        "style": "Organised, prefers a morning flight and a window seat"
+      },
+      "private_facts": {
+        "booking_reference": "K7XQ2M",
+        "last_name": "Rivera",
+        "passenger_id": "P1",
+        "outbound_segment_id": "S1",
+        "preferred_new_date": "2026-11-21",
+        "time_preference": "MORNING",
+        "preferred_seat": "23A",
+        "seat_preference": "WINDOW"
+      },
+      "goals": [
+        "Ask to move your outbound flight to 21 November 2026.",
+        "When asked for booking details, provide booking reference K7XQ2M and last name Rivera.",
+        "When asked which leg, specify the outbound leg.",
+        "When asked about timing, say morning is preferable.",
+        "Choose the first suitable alternative flight.",
+        "Confirm the rebooking only after the agent clearly states the flight and total cost.",
+        "After the rebooking is complete, ask for a window seat on the new flight.",
+        "If seat 23A is offered, choose it and confirm the assignment.",
+        "After receiving both confirmations, say that is everything and end the chat."
+      ],
+      "end_condition": "End after the outbound flight is rebooked and seat 23A is assigned.",
+      "confirmation_policy": {
+        "allow_rebooking": true,
+        "allow_cancellation": false,
+        "allow_baggage_purchase": false,
+        "allow_paid_seat_assignment": false,
+        "allow_free_seat_assignment": true
+      },
+      "evaluation": {
+        "expected_skills": [
+          "reschedule_flight",
+          "verify_identity",
+          "seat_selection"
+        ],
+        "required_tools": [
+          "get_booking",
+          "search_alternative_flights",
+          "rebook_segment",
+          "get_seat_map",
+          "assign_seat"
+        ],
+        "forbidden_tools": [
+          "get_cancellation_quote",
+          "cancel_segments",
+          "quote_extra_bags",
+          "purchase_extra_bags",
+          "check_in_passengers",
+          "file_baggage_report"
+        ],
+        "expected_tool_arguments": {
+          "search_alternative_flights": {
+            "booking_reference": "K7XQ2M",
+            "segment_id": "S1",
+            "new_date": "2026-11-21"
+          },
+          "rebook_segment": {
+            "booking_reference": "K7XQ2M",
+            "segment_id": "S1",
+            "option_id": "OPT-1"
+          },
+          "assign_seat": {
+            "booking_reference": "K7XQ2M",
+            "segment_id": "S1",
+            "passenger_id": "P1",
+            "seat_number": "23A"
+          }
+        },
+        "expected_end_chat": {
+          "reason": "RESOLVED",
+          "resolved": true
+        },
+        "expected_facts_in_final_response": [
+          "CHG-30418876",
+          "MR210",
+          "SEAT-90217744",
+          "23A"
+        ]
+      }
+    },
+    {
+      "test_id": "TC07_extra_bag_then_check_in",
+      "category": "two_skills",
+      "max_turns": 24,
+      "persona": {
+        "name": "Jordan Rivera",
+        "style": "Efficient, comfortable paying the quoted online fee"
+      },
+      "private_facts": {
+        "booking_reference": "K7XQ2M",
+        "last_name": "Rivera",
+        "passenger_id": "P1",
+        "outbound_segment_id": "S1",
+        "return_segment_id": "S2",
+        "extra_bag_quantity": 1,
+        "boarding_pass_delivery": "EMAIL"
+      },
+      "goals": [
+        "Ask to add one checked bag for your whole trip and then check in.",
+        "When asked for booking details, provide booking reference K7XQ2M and last name Rivera.",
+        "When asked whose bag and for which segments, say the extra bag is for yourself and should cover both directions.",
+        "Confirm the extra-bag purchase only after the agent states the total cost.",
+        "After the bag is purchased, ask to check in.",
+        "When asked which passenger, say only yourself.",
+        "When asked how to receive the boarding pass, choose email.",
+        "After receiving confirmation, say that is done and end the chat."
+      ],
+      "end_condition": "End after the extra bag is purchased and your boarding pass has been sent by email.",
+      "confirmation_policy": {
+        "allow_rebooking": false,
+        "allow_cancellation": false,
+        "allow_baggage_purchase": true,
+        "allow_paid_seat_assignment": false,
+        "allow_check_in_for_self": true
+      },
+      "evaluation": {
+        "expected_skills": [
+          "baggage",
+          "verify_identity",
+          "check_in"
+        ],
+        "required_tools": [
+          "get_booking",
+          "quote_extra_bags",
+          "purchase_extra_bags",
+          "get_check_in_eligibility",
+          "check_in_passengers",
+          "send_boarding_passes"
+        ],
+        "forbidden_tools": [
+          "get_cancellation_quote",
+          "cancel_segments",
+          "search_alternative_flights",
+          "rebook_segment",
+          "assign_seat",
+          "file_baggage_report"
+        ],
+        "expected_tool_arguments": {
+          "quote_extra_bags": {
+            "booking_reference": "K7XQ2M",
+            "passenger_id": "P1",
+            "segment_ids": ["S1", "S2"],
+            "quantity": 1
+          },
+          "purchase_extra_bags": {
+            "booking_reference": "K7XQ2M",
+            "quote_id": "BQ-551209"
+          },
+          "check_in_passengers": {
+            "booking_reference": "K7XQ2M",
+            "segment_id": "S1",
+            "passenger_ids": ["P1"]
+          },
+          "send_boarding_passes": {
+            "booking_reference": "K7XQ2M",
+            "segment_id": "S1",
+            "passenger_ids": ["P1"],
+            "delivery": "EMAIL"
+          }
+        },
+        "expected_end_chat": {
+          "reason": "RESOLVED",
+          "resolved": true
+        },
+        "expected_facts_in_final_response": [
+          "BAG-55120931",
+          "USD 150.00",
+          "boarding group 4"
+        ]
+      }
+    },
+    {
+      "test_id": "TC08_flight_status_then_cancel_booking",
+      "category": "two_skills",
+      "max_turns": 24,
+      "persona": {
+        "name": "Jordan Rivera",
+        "style": "Calm but disappointed; wants to cancel after learning about the delay"
+      },
+      "private_facts": {
+        "booking_reference": "K7XQ2M",
+        "last_name": "Rivera",
+        "flight_number": "MR214",
+        "flight_date": "2026-11-20",
+        "outbound_segment_id": "S1",
+        "return_segment_id": "S2",
+        "preferred_refund_method": "ORIGINAL_PAYMENT"
+      },
+      "goals": [
+        "Ask whether flight MR214 on 20 November 2026 is cancelled.",
+        "After learning it is delayed, say you would like to cancel the whole booking and receive the money back to your original payment method.",
+        "When asked for booking details, provide booking reference K7XQ2M and last name Rivera.",
+        "When asked to confirm what should be cancelled, confirm both legs.",
+        "Listen to the cancellation quote, including the fee and refund options.",
+        "Confirm cancellation to the original payment method only after the agent clearly states the amount and outcome.",
+        "After receiving the cancellation confirmation, thank the agent and end the chat."
+      ],
+      "end_condition": "End after the whole booking is cancelled and the agent provides the cancellation confirmation and refund outcome.",
+      "confirmation_policy": {
+        "allow_rebooking": false,
+        "allow_cancellation": true,
+        "allow_baggage_purchase": false,
+        "allow_paid_seat_assignment": false
+      },
+      "evaluation": {
+        "expected_skills": [
+          "flight_status",
+          "cancel_booking",
+          "verify_identity"
+        ],
+        "required_tools": [
+          "get_flight_status",
+          "get_booking",
+          "get_cancellation_quote",
+          "cancel_segments"
+        ],
+        "forbidden_tools": [
+          "search_alternative_flights",
+          "rebook_segment",
+          "quote_extra_bags",
+          "purchase_extra_bags",
+          "assign_seat",
+          "check_in_passengers",
+          "file_baggage_report"
+        ],
+        "expected_tool_arguments": {
+          "get_flight_status": {
+            "flight_number": "MR214",
+            "departure_date": "2026-11-20"
+          },
+          "get_cancellation_quote": {
+            "booking_reference": "K7XQ2M",
+            "segment_ids": ["S1", "S2"]
+          },
+          "cancel_segments": {
+            "booking_reference": "K7XQ2M",
+            "quote_id": "CQ-7731902",
+            "refund_method": "ORIGINAL_PAYMENT"
+          }
+        },
+        "expected_end_chat": {
+          "reason": "RESOLVED",
+          "resolved": true
+        },
+        "expected_facts_in_final_response": [
+          "CXL-88213407",
+          "MRCR-4T9K-22LQ",
+          "USD 1,692.60"
+        ],
+        "notes": "The customer requests ORIGINAL_PAYMENT, but the fixed cancel_segments response returns TRAVEL_CREDIT. The agent must clearly report the actual fixed outcome and credit details."
+      }
+    },
+    {
+      "test_id": "TC09_status_reschedule_status",
+      "category": "switch_back_A_B_A",
+      "max_turns": 20,
+      "persona": {
+        "name": "Jordan Rivera",
+        "style": "Polite, concise, cautious about extra costs"
+      },
+      "private_facts": {
+        "booking_reference": "K7XQ2M",
+        "last_name": "Rivera",
+        "passenger_id": "P1",
+        "flight_number": "MR214",
+        "flight_date": "2026-11-20",
+        "outbound_segment_id": "S1",
+        "preferred_new_date": "2026-11-21",
+        "time_preference": "ANY"
+      },
+      "goals": [
+        "Ask whether flight MR214 from JFK to LHR on 20 November 2026 is delayed.",
+        "If the flight is delayed, ask for alternative outbound flights on 21 November 2026.",
+        "When the agent asks which booking or leg you mean, provide booking reference K7XQ2M, last name Rivera, and specify the outbound leg.",
+        "Before choosing an alternative flight, ask for the latest estimated departure time for MR214.",
+        "Do not choose or confirm an alternative flight.",
+        "After receiving the latest departure information, politely say you will decide later and end the chat."
+      ],
+      "end_condition": "End after receiving the latest estimated departure time for MR214 and saying you will decide later.",
+      "confirmation_policy": {
+        "allow_rebooking": false,
+        "allow_cancellation": false,
+        "allow_baggage_purchase": false,
+        "allow_paid_seat_assignment": false
+      },
+      "evaluation": {
+        "expected_skills": [
+          "flight_status",
+          "reschedule_flight",
+          "verify_identity"
+        ],
+        "required_tools": [
+          "get_flight_status",
+          "get_booking",
+          "search_alternative_flights",
+          "get_flight_status"
+        ],
+        "forbidden_tools": [
+          "rebook_segment",
+          "cancel_segments",
+          "purchase_extra_bags",
+          "assign_seat"
+        ],
+        "expected_end_chat": {
+          "reason": "CUSTOMER_ENDED",
+          "resolved": true
+        },
+        "expected_facts_in_final_response": [
+          "MR214",
+          "21:05"
+        ]
+      }
+    },
+    {
+      "test_id": "TC10_baggage_lost_baggage_baggage_quote",
+      "category": "switch_back_A_B_A",
+      "max_turns": 26,
+      "persona": {
+        "name": "Jordan Rivera",
+        "style": "Concerned about the missing bag, but calm and cooperative"
+      },
+      "private_facts": {
+        "booking_reference": "K7XQ2M",
+        "last_name": "Rivera",
+        "passenger_id": "P1",
+        "outbound_segment_id": "S1",
+        "return_segment_id": "S2",
+        "bag_tag_number": "1234567890",
+        "bag_description": "Navy hard-shell Samsonite suitcase with a red ribbon",
+        "delivery_address": "The Langham, 1C Portland Place, London W1B 1JA",
+        "contact_phone": "+44 7700 900123",
+        "extra_bag_quantity": 1
+      },
+      "goals": [
+        "Ask how many checked bags you are allowed.",
+        "When asked for booking details, provide booking reference K7XQ2M and last name Rivera.",
+        "After receiving the allowance, say that your checked bag did not arrive at Heathrow and ask to report it.",
+        "When asked for the bag tag, provide 1234567890.",
+        "When asked to describe the bag, say it is a navy hard-shell Samsonite suitcase with a red ribbon.",
+        "When asked for delivery details, provide The Langham, 1C Portland Place, London W1B 1JA and phone +44 7700 900123.",
+        "After the baggage report is filed, ask how much another checked bag would cost for the return flight.",
+        "When the agent provides the price, say you do not want to buy it and only wanted the price.",
+        "Thank the agent and end the chat."
+      ],
+      "end_condition": "End after the baggage report is filed and the return extra-bag price has been provided without making a purchase.",
+      "confirmation_policy": {
+        "allow_rebooking": false,
+        "allow_cancellation": false,
+        "allow_baggage_purchase": false,
+        "allow_paid_seat_assignment": false
+      },
+      "evaluation": {
+        "expected_skills": [
+          "baggage",
+          "verify_identity",
+          "lost_baggage"
+        ],
+        "required_tools": [
+          "get_booking",
+          "get_baggage_allowance",
+          "file_baggage_report",
+          "quote_extra_bags"
+        ],
+        "forbidden_tools": [
+          "purchase_extra_bags",
+          "get_cancellation_quote",
+          "cancel_segments",
+          "search_alternative_flights",
+          "rebook_segment",
+          "assign_seat",
+          "check_in_passengers"
+        ],
+        "expected_tool_arguments": {
+          "file_baggage_report": {
+            "booking_reference": "K7XQ2M",
+            "passenger_id": "P1",
+            "bag_tag_number": "1234567890",
+            "issue_type": "DELAYED"
+          },
+          "quote_extra_bags": {
+            "booking_reference": "K7XQ2M",
+            "passenger_id": "P1",
+            "segment_ids": ["S2"],
+            "quantity": 1
+          }
+        },
+        "expected_end_chat": {
+          "reason": "RESOLVED",
+          "resolved": true
+        },
+        "expected_facts_in_final_response": [
+          "LHRMR40127",
+          "TRACING",
+          "USD 75.00"
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,51 @@
+{
+  "suite": "meridian_air_customer_simulator_v1",
+  "agent_url": "http://localhost:3000",
+  "customer_model": "openai/gpt-oss-120b",
+  "results": [
+    {
+      "test_id": "TC01_flight_status",
+      "category": "one_skill",
+      "thread_id": "f1e209f9-63ef-4979-bde5-5dbb428c3c09",
+      "ended_by": "agent_end_chat",
+      "customer_turns": 3,
+      "checks": [
+        {
+          "name": "skills loaded",
+          "pass": true,
+          "detail": "loaded [flight_status]"
+        },
+        {
+          "name": "no redundant reload",
+          "pass": true,
+          "detail": "load order [flight_status]"
+        },
+        {
+          "name": "tools only from applied skill",
+          "pass": true,
+          "detail": "ok"
+        },
+        {
+          "name": "required tools called",
+          "pass": true,
+          "detail": "ok"
+        },
+        {
+          "name": "no forbidden tools",
+          "pass": true,
+          "detail": "ok"
+        },
+        {
+          "name": "end_chat",
+          "pass": true,
+          "detail": "reason=RESOLVED resolved=true"
+        },
+        {
+          "name": "facts told to customer",
+          "pass": true,
+          "detail": "ok"
+        }
+      ]
+    }
+  ]
+}

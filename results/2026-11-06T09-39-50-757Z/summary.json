@@ -1,0 +1,522 @@
+{
+  "suite": "meridian_air_customer_simulator_v1",
+  "agent_url": "http://localhost:3000",
+  "customer_model": "openai/gpt-oss-120b",
+  "results": [
+    {
+      "test_id": "TC01_flight_status",
+      "category": "one_skill",
+      "thread_id": "973e50fa-54f8-465b-b1d0-f6e0b83b1165",
+      "ended_by": "agent_end_chat",
+      "customer_turns": 3,
+      "checks": [
+        {
+          "name": "skills loaded",
+          "pass": true,
+          "detail": "loaded [flight_status]"
+        },
+        {
+          "name": "no redundant reload",
+          "pass": true,
+          "detail": "load order [flight_status]"
+        },
+        {
+          "name": "tools only from applied skill",
+          "pass": true,
+          "detail": "ok"
+        },
+        {
+          "name": "required tools called",
+          "pass": true,
+          "detail": "ok"
+        },
+        {
+          "name": "no forbidden tools",
+          "pass": true,
+          "detail": "ok"
+        },
+        {
+          "name": "end_chat",
+          "pass": true,
+          "detail": "reason=RESOLVED resolved=true"
+        },
+        {
+          "name": "facts told to customer",
+          "pass": true,
+          "detail": "ok"
+        }
+      ]
+    },
+    {
+      "test_id": "TC02_seat_selection_free_window",
+      "category": "one_skill",
+      "thread_id": "1bc063b3-233c-407c-95b8-c9a1c909fe5c",
+      "ended_by": "agent_end_chat",
+      "customer_turns": 5,
+      "checks": [
+        {
+          "name": "skills loaded",
+          "pass": true,
+          "detail": "loaded [seat_selection, verify_identity]"
+        },
+        {
+          "name": "no redundant reload",
+          "pass": true,
+          "detail": "load order [seat_selection]"
+        },
+        {
+          "name": "tools only from applied skill",
+          "pass": true,
+          "detail": "ok"
+        },
+        {
+          "name": "required tools called",
+          "pass": true,
+          "detail": "ok"
+        },
+        {
+          "name": "no forbidden tools",
+          "pass": true,
+          "detail": "ok"
+        },
+        {
+          "name": "assign_seat arguments",
+          "pass": true,
+          "detail": "ok"
+        },
+        {
+          "name": "end_chat",
+          "pass": true,
+          "detail": "reason=RESOLVED resolved=true"
+        },
+        {
+          "name": "facts told to customer",
+          "pass": true,
+          "detail": "ok"
+        }
+      ]
+    },
+    {
+      "test_id": "TC03_baggage_allowance",
+      "category": "one_skill",
+      "thread_id": "525701b9-d2ef-4bc4-8da9-01365c78e11c",
+      "ended_by": "agent_end_chat",
+      "customer_turns": 3,
+      "checks": [
+        {
+          "name": "skills loaded",
+          "pass": true,
+          "detail": "loaded [baggage, verify_identity]"
+        },
+        {
+          "name": "no redundant reload",
+          "pass": true,
+          "detail": "load order [baggage]"
+        },
+        {
+          "name": "tools only from applied skill",
+          "pass": true,
+          "detail": "ok"
+        },
+        {
+          "name": "required tools called",
+          "pass": true,
+          "detail": "ok"
+        },
+        {
+          "name": "no forbidden tools",
+          "pass": true,
+          "detail": "ok"
+        },
+        {
+          "name": "end_chat",
+          "pass": true,
+          "detail": "reason=RESOLVED resolved=true"
+        },
+        {
+          "name": "facts told to customer",
+          "pass": true,
+          "detail": "ok"
+        }
+      ]
+    },
+    {
+      "test_id": "TC04_check_in_primary_passenger",
+      "category": "one_skill",
+      "thread_id": "d64c49ad-1caf-4d8a-b7bc-6b4dd76b7200",
+      "ended_by": "agent_end_chat",
+      "customer_turns": 5,
+      "checks": [
+        {
+          "name": "skills loaded",
+          "pass": true,
+          "detail": "loaded [check_in, verify_identity]"
+        },
+        {
+          "name": "no redundant reload",
+          "pass": true,
+          "detail": "load order [check_in]"
+        },
+        {
+          "name": "tools only from applied skill",
+          "pass": true,
+          "detail": "ok"
+        },
+        {
+          "name": "required tools called",
+          "pass": true,
+          "detail": "ok"
+        },
+        {
+          "name": "no forbidden tools",
+          "pass": true,
+          "detail": "ok"
+        },
+        {
+          "name": "check_in_passengers arguments",
+          "pass": true,
+          "detail": "ok"
+        },
+        {
+          "name": "send_boarding_passes arguments",
+          "pass": true,
+          "detail": "ok"
+        },
+        {
+          "name": "end_chat",
+          "pass": false,
+          "detail": "reason=RESOLVED resolved=false"
+        },
+        {
+          "name": "facts told to customer",
+          "pass": false,
+          "detail": "never said [P1]"
+        }
+      ]
+    },
+    {
+      "test_id": "TC05_refund_status",
+      "category": "one_skill",
+      "thread_id": "93db1d99-f0d9-46c0-aa27-5a73c7d04635",
+      "ended_by": "agent_end_chat",
+      "customer_turns": 4,
+      "checks": [
+        {
+          "name": "skills loaded",
+          "pass": true,
+          "detail": "loaded [refunds_and_credits, verify_identity]"
+        },
+        {
+          "name": "no redundant reload",
+          "pass": true,
+          "detail": "load order [refunds_and_credits]"
+        },
+        {
+          "name": "tools only from applied skill",
+          "pass": true,
+          "detail": "ok"
+        },
+        {
+          "name": "required tools called",
+          "pass": true,
+          "detail": "ok"
+        },
+        {
+          "name": "no forbidden tools",
+          "pass": true,
+          "detail": "ok"
+        },
+        {
+          "name": "end_chat",
+          "pass": true,
+          "detail": "reason=RESOLVED resolved=true"
+        },
+        {
+          "name": "facts told to customer",
+          "pass": false,
+          "detail": "never said [CXL-87990215, 12 November 2026]"
+        }
+      ]
+    },
+    {
+      "test_id": "TC06_reschedule_then_seat_selection",
+      "category": "two_skills",
+      "thread_id": "d7c40ab9-ff38-4738-b0c9-2da6784bc9f4",
+      "ended_by": "agent_end_chat",
+      "customer_turns": 8,
+      "checks": [
+        {
+          "name": "skills loaded",
+          "pass": true,
+          "detail": "loaded [reschedule_flight, verify_identity, seat_selection]"
+        },
+        {
+          "name": "no redundant reload",
+          "pass": true,
+          "detail": "load order [reschedule_flight → seat_selection]"
+        },
+        {
+          "name": "tools only from applied skill",
+          "pass": true,
+          "detail": "ok"
+        },
+        {
+          "name": "required tools called",
+          "pass": true,
+          "detail": "ok"
+        },
+        {
+          "name": "no forbidden tools",
+          "pass": true,
+          "detail": "ok"
+        },
+        {
+          "name": "search_alternative_flights arguments",
+          "pass": true,
+          "detail": "ok"
+        },
+        {
+          "name": "rebook_segment arguments",
+          "pass": true,
+          "detail": "ok"
+        },
+        {
+          "name": "assign_seat arguments",
+          "pass": true,
+          "detail": "ok"
+        },
+        {
+          "name": "end_chat",
+          "pass": true,
+          "detail": "reason=RESOLVED resolved=true"
+        },
+        {
+          "name": "facts told to customer",
+          "pass": true,
+          "detail": "ok"
+        }
+      ]
+    },
+    {
+      "test_id": "TC07_extra_bag_then_check_in",
+      "category": "two_skills",
+      "thread_id": "345c599d-fcbe-4149-a7b1-bc964c81c4d6",
+      "ended_by": "agent_end_chat",
+      "customer_turns": 7,
+      "checks": [
+        {
+          "name": "skills loaded",
+          "pass": true,
+          "detail": "loaded [baggage, verify_identity, check_in]"
+        },
+        {
+          "name": "no redundant reload",
+          "pass": true,
+          "detail": "load order [baggage → check_in]"
+        },
+        {
+          "name": "tools only from applied skill",
+          "pass": true,
+          "detail": "ok"
+        },
+        {
+          "name": "required tools called",
+          "pass": true,
+          "detail": "ok"
+        },
+        {
+          "name": "no forbidden tools",
+          "pass": true,
+          "detail": "ok"
+        },
+        {
+          "name": "quote_extra_bags arguments",
+          "pass": true,
+          "detail": "ok"
+        },
+        {
+          "name": "purchase_extra_bags arguments",
+          "pass": true,
+          "detail": "ok"
+        },
+        {
+          "name": "check_in_passengers arguments",
+          "pass": true,
+          "detail": "ok"
+        },
+        {
+          "name": "send_boarding_passes arguments",
+          "pass": true,
+          "detail": "ok"
+        },
+        {
+          "name": "end_chat",
+          "pass": true,
+          "detail": "reason=RESOLVED resolved=true"
+        },
+        {
+          "name": "facts told to customer",
+          "pass": true,
+          "detail": "ok"
+        }
+      ]
+    },
+    {
+      "test_id": "TC08_flight_status_then_cancel_booking",
+      "category": "two_skills",
+      "thread_id": "edc96906-7b9b-47ba-bda7-ec0a04c930e0",
+      "ended_by": "agent_end_chat",
+      "customer_turns": 6,
+      "checks": [
+        {
+          "name": "skills loaded",
+          "pass": false,
+          "detail": "loaded [flight_status, cancel_booking, verify_identity, human_handoff]; unexpected [human_handoff]"
+        },
+        {
+          "name": "no redundant reload",
+          "pass": true,
+          "detail": "load order [flight_status → cancel_booking → human_handoff]"
+        },
+        {
+          "name": "tools only from applied skill",
+          "pass": true,
+          "detail": "ok"
+        },
+        {
+          "name": "required tools called",
+          "pass": true,
+          "detail": "ok"
+        },
+        {
+          "name": "no forbidden tools",
+          "pass": true,
+          "detail": "ok"
+        },
+        {
+          "name": "get_flight_status arguments",
+          "pass": true,
+          "detail": "ok"
+        },
+        {
+          "name": "get_cancellation_quote arguments",
+          "pass": true,
+          "detail": "ok"
+        },
+        {
+          "name": "cancel_segments arguments",
+          "pass": true,
+          "detail": "ok"
+        },
+        {
+          "name": "end_chat",
+          "pass": false,
+          "detail": "reason=HANDED_OFF resolved=false"
+        },
+        {
+          "name": "facts told to customer",
+          "pass": true,
+          "detail": "ok"
+        }
+      ]
+    },
+    {
+      "test_id": "TC09_status_reschedule_status",
+      "category": "switch_back_A_B_A",
+      "thread_id": "64163b45-52f7-42c6-a64e-c68e94acc057",
+      "ended_by": "customer",
+      "customer_turns": 4,
+      "checks": [
+        {
+          "name": "skills loaded",
+          "pass": true,
+          "detail": "loaded [flight_status, reschedule_flight, verify_identity]"
+        },
+        {
+          "name": "no redundant reload",
+          "pass": true,
+          "detail": "load order [flight_status → reschedule_flight]"
+        },
+        {
+          "name": "tools only from applied skill",
+          "pass": true,
+          "detail": "ok"
+        },
+        {
+          "name": "required tools called",
+          "pass": false,
+          "detail": "missing [get_flight_status ×2 (got 1)]"
+        },
+        {
+          "name": "no forbidden tools",
+          "pass": true,
+          "detail": "ok"
+        },
+        {
+          "name": "end_chat",
+          "pass": false,
+          "detail": "end_chat never called"
+        },
+        {
+          "name": "facts told to customer",
+          "pass": true,
+          "detail": "ok"
+        }
+      ]
+    },
+    {
+      "test_id": "TC10_baggage_lost_baggage_baggage_quote",
+      "category": "switch_back_A_B_A",
+      "thread_id": "0fa254bc-643f-449c-9261-4fd7adff5708",
+      "ended_by": "agent_end_chat",
+      "customer_turns": 6,
+      "checks": [
+        {
+          "name": "skills loaded",
+          "pass": true,
+          "detail": "loaded [baggage, verify_identity, lost_baggage]"
+        },
+        {
+          "name": "no redundant reload",
+          "pass": true,
+          "detail": "load order [baggage → lost_baggage → baggage]"
+        },
+        {
+          "name": "tools only from applied skill",
+          "pass": true,
+          "detail": "ok"
+        },
+        {
+          "name": "required tools called",
+          "pass": false,
+          "detail": "missing [quote_extra_bags]"
+        },
+        {
+          "name": "no forbidden tools",
+          "pass": true,
+          "detail": "ok"
+        },
+        {
+          "name": "file_baggage_report arguments",
+          "pass": true,
+          "detail": "ok"
+        },
+        {
+          "name": "quote_extra_bags arguments",
+          "pass": false,
+          "detail": "never called"
+        },
+        {
+          "name": "end_chat",
+          "pass": true,
+          "detail": "reason=RESOLVED resolved=true"
+        },
+        {
+          "name": "facts told to customer",
+          "pass": true,
+          "detail": "ok"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,86 @@
+test_id,category,scenario_verdict,ended_by,customer_turns,checks_passed,check,check_pass,detail
+TC01_flight_status,one_skill,PASS,agent_end_chat,3,7-Jul,skills loaded,PASS,loaded [flight_status]
+TC01_flight_status,one_skill,PASS,agent_end_chat,3,7-Jul,no redundant reload,PASS,load order [flight_status]
+TC01_flight_status,one_skill,PASS,agent_end_chat,3,7-Jul,tools only from applied skill,PASS,ok
+TC01_flight_status,one_skill,PASS,agent_end_chat,3,7-Jul,required tools called,PASS,ok
+TC01_flight_status,one_skill,PASS,agent_end_chat,3,7-Jul,no forbidden tools,PASS,ok
+TC01_flight_status,one_skill,PASS,agent_end_chat,3,7-Jul,end_chat,PASS,reason=RESOLVED resolved=true
+TC01_flight_status,one_skill,PASS,agent_end_chat,3,7-Jul,facts told to customer,PASS,ok
+TC02_seat_selection_free_window,one_skill,PASS,agent_end_chat,5,8-Aug,skills loaded,PASS,"loaded [seat_selection, verify_identity]"
+TC02_seat_selection_free_window,one_skill,PASS,agent_end_chat,5,8-Aug,no redundant reload,PASS,load order [seat_selection]
+TC02_seat_selection_free_window,one_skill,PASS,agent_end_chat,5,8-Aug,tools only from applied skill,PASS,ok
+TC02_seat_selection_free_window,one_skill,PASS,agent_end_chat,5,8-Aug,required tools called,PASS,ok
+TC02_seat_selection_free_window,one_skill,PASS,agent_end_chat,5,8-Aug,no forbidden tools,PASS,ok
+TC02_seat_selection_free_window,one_skill,PASS,agent_end_chat,5,8-Aug,assign_seat arguments,PASS,ok
+TC02_seat_selection_free_window,one_skill,PASS,agent_end_chat,5,8-Aug,end_chat,PASS,reason=RESOLVED resolved=true
+TC02_seat_selection_free_window,one_skill,PASS,agent_end_chat,5,8-Aug,facts told to customer,PASS,ok
+TC03_baggage_allowance,one_skill,PASS,agent_end_chat,3,7-Jul,skills loaded,PASS,"loaded [baggage, verify_identity]"
+TC03_baggage_allowance,one_skill,PASS,agent_end_chat,3,7-Jul,no redundant reload,PASS,load order [baggage]
+TC03_baggage_allowance,one_skill,PASS,agent_end_chat,3,7-Jul,tools only from applied skill,PASS,ok
+TC03_baggage_allowance,one_skill,PASS,agent_end_chat,3,7-Jul,required tools called,PASS,ok
+TC03_baggage_allowance,one_skill,PASS,agent_end_chat,3,7-Jul,no forbidden tools,PASS,ok
+TC03_baggage_allowance,one_skill,PASS,agent_end_chat,3,7-Jul,end_chat,PASS,reason=RESOLVED resolved=true
+TC03_baggage_allowance,one_skill,PASS,agent_end_chat,3,7-Jul,facts told to customer,PASS,ok
+TC04_check_in_primary_passenger,one_skill,FAIL,agent_end_chat,5,7-Sept,skills loaded,PASS,"loaded [check_in, verify_identity]"
+TC04_check_in_primary_passenger,one_skill,FAIL,agent_end_chat,5,7-Sept,no redundant reload,PASS,load order [check_in]
+TC04_check_in_primary_passenger,one_skill,FAIL,agent_end_chat,5,7-Sept,tools only from applied skill,PASS,ok
+TC04_check_in_primary_passenger,one_skill,FAIL,agent_end_chat,5,7-Sept,required tools called,PASS,ok
+TC04_check_in_primary_passenger,one_skill,FAIL,agent_end_chat,5,7-Sept,no forbidden tools,PASS,ok
+TC04_check_in_primary_passenger,one_skill,FAIL,agent_end_chat,5,7-Sept,check_in_passengers arguments,PASS,ok
+TC04_check_in_primary_passenger,one_skill,FAIL,agent_end_chat,5,7-Sept,send_boarding_passes arguments,PASS,ok
+TC04_check_in_primary_passenger,one_skill,FAIL,agent_end_chat,5,7-Sept,end_chat,FAIL,reason=RESOLVED resolved=false
+TC04_check_in_primary_passenger,one_skill,FAIL,agent_end_chat,5,7-Sept,facts told to customer,FAIL,never said [P1]
+TC05_refund_status,one_skill,FAIL,agent_end_chat,4,6-Jul,skills loaded,PASS,"loaded [refunds_and_credits, verify_identity]"
+TC05_refund_status,one_skill,FAIL,agent_end_chat,4,6-Jul,no redundant reload,PASS,load order [refunds_and_credits]
+TC05_refund_status,one_skill,FAIL,agent_end_chat,4,6-Jul,tools only from applied skill,PASS,ok
+TC05_refund_status,one_skill,FAIL,agent_end_chat,4,6-Jul,required tools called,PASS,ok
+TC05_refund_status,one_skill,FAIL,agent_end_chat,4,6-Jul,no forbidden tools,PASS,ok
+TC05_refund_status,one_skill,FAIL,agent_end_chat,4,6-Jul,end_chat,PASS,reason=RESOLVED resolved=true
+TC05_refund_status,one_skill,FAIL,agent_end_chat,4,6-Jul,facts told to customer,FAIL,"never said [CXL-87990215, 12 November 2026]"
+TC06_reschedule_then_seat_selection,two_skills,PASS,agent_end_chat,8,10-Oct,skills loaded,PASS,"loaded [reschedule_flight, verify_identity, seat_selection]"
+TC06_reschedule_then_seat_selection,two_skills,PASS,agent_end_chat,8,10-Oct,no redundant reload,PASS,load order [reschedule_flight → seat_selection]
+TC06_reschedule_then_seat_selection,two_skills,PASS,agent_end_chat,8,10-Oct,tools only from applied skill,PASS,ok
+TC06_reschedule_then_seat_selection,two_skills,PASS,agent_end_chat,8,10-Oct,required tools called,PASS,ok
+TC06_reschedule_then_seat_selection,two_skills,PASS,agent_end_chat,8,10-Oct,no forbidden tools,PASS,ok
+TC06_reschedule_then_seat_selection,two_skills,PASS,agent_end_chat,8,10-Oct,search_alternative_flights arguments,PASS,ok
+TC06_reschedule_then_seat_selection,two_skills,PASS,agent_end_chat,8,10-Oct,rebook_segment arguments,PASS,ok
+TC06_reschedule_then_seat_selection,two_skills,PASS,agent_end_chat,8,10-Oct,assign_seat arguments,PASS,ok
+TC06_reschedule_then_seat_selection,two_skills,PASS,agent_end_chat,8,10-Oct,end_chat,PASS,reason=RESOLVED resolved=true
+TC06_reschedule_then_seat_selection,two_skills,PASS,agent_end_chat,8,10-Oct,facts told to customer,PASS,ok
+TC07_extra_bag_then_check_in,two_skills,PASS,agent_end_chat,7,11-Nov,skills loaded,PASS,"loaded [baggage, verify_identity, check_in]"
+TC07_extra_bag_then_check_in,two_skills,PASS,agent_end_chat,7,11-Nov,no redundant reload,PASS,load order [baggage → check_in]
+TC07_extra_bag_then_check_in,two_skills,PASS,agent_end_chat,7,11-Nov,tools only from applied skill,PASS,ok
+TC07_extra_bag_then_check_in,two_skills,PASS,agent_end_chat,7,11-Nov,required tools called,PASS,ok
+TC07_extra_bag_then_check_in,two_skills,PASS,agent_end_chat,7,11-Nov,no forbidden tools,PASS,ok
+TC07_extra_bag_then_check_in,two_skills,PASS,agent_end_chat,7,11-Nov,quote_extra_bags arguments,PASS,ok
+TC07_extra_bag_then_check_in,two_skills,PASS,agent_end_chat,7,11-Nov,purchase_extra_bags arguments,PASS,ok
+TC07_extra_bag_then_check_in,two_skills,PASS,agent_end_chat,7,11-Nov,check_in_passengers arguments,PASS,ok
+TC07_extra_bag_then_check_in,two_skills,PASS,agent_end_chat,7,11-Nov,send_boarding_passes arguments,PASS,ok
+TC07_extra_bag_then_check_in,two_skills,PASS,agent_end_chat,7,11-Nov,end_chat,PASS,reason=RESOLVED resolved=true
+TC07_extra_bag_then_check_in,two_skills,PASS,agent_end_chat,7,11-Nov,facts told to customer,PASS,ok
+TC08_flight_status_then_cancel_booking,two_skills,FAIL,agent_end_chat,6,8-Oct,skills loaded,FAIL,"loaded [flight_status, cancel_booking, verify_identity, human_handoff]; unexpected [human_handoff]"
+TC08_flight_status_then_cancel_booking,two_skills,FAIL,agent_end_chat,6,8-Oct,no redundant reload,PASS,load order [flight_status → cancel_booking → human_handoff]
+TC08_flight_status_then_cancel_booking,two_skills,FAIL,agent_end_chat,6,8-Oct,tools only from applied skill,PASS,ok
+TC08_flight_status_then_cancel_booking,two_skills,FAIL,agent_end_chat,6,8-Oct,required tools called,PASS,ok
+TC08_flight_status_then_cancel_booking,two_skills,FAIL,agent_end_chat,6,8-Oct,no forbidden tools,PASS,ok
+TC08_flight_status_then_cancel_booking,two_skills,FAIL,agent_end_chat,6,8-Oct,get_flight_status arguments,PASS,ok
+TC08_flight_status_then_cancel_booking,two_skills,FAIL,agent_end_chat,6,8-Oct,get_cancellation_quote arguments,PASS,ok
+TC08_flight_status_then_cancel_booking,two_skills,FAIL,agent_end_chat,6,8-Oct,cancel_segments arguments,PASS,ok
+TC08_flight_status_then_cancel_booking,two_skills,FAIL,agent_end_chat,6,8-Oct,end_chat,FAIL,reason=HANDED_OFF resolved=false
+TC08_flight_status_then_cancel_booking,two_skills,FAIL,agent_end_chat,6,8-Oct,facts told to customer,PASS,ok
+TC09_status_reschedule_status,switch_back_A_B_A,FAIL,customer,4,5-Jul,skills loaded,PASS,"loaded [flight_status, reschedule_flight, verify_identity]"
+TC09_status_reschedule_status,switch_back_A_B_A,FAIL,customer,4,5-Jul,no redundant reload,PASS,load order [flight_status → reschedule_flight]
+TC09_status_reschedule_status,switch_back_A_B_A,FAIL,customer,4,5-Jul,tools only from applied skill,PASS,ok
+TC09_status_reschedule_status,switch_back_A_B_A,FAIL,customer,4,5-Jul,required tools called,FAIL,missing [get_flight_status ×2 (got 1)]
+TC09_status_reschedule_status,switch_back_A_B_A,FAIL,customer,4,5-Jul,no forbidden tools,PASS,ok
+TC09_status_reschedule_status,switch_back_A_B_A,FAIL,customer,4,5-Jul,end_chat,FAIL,end_chat never called
+TC09_status_reschedule_status,switch_back_A_B_A,FAIL,customer,4,5-Jul,facts told to customer,PASS,ok
+TC10_baggage_lost_baggage_baggage_quote,switch_back_A_B_A,FAIL,agent_end_chat,6,7-Sept,skills loaded,PASS,"loaded [baggage, verify_identity, lost_baggage]"
+TC10_baggage_lost_baggage_baggage_quote,switch_back_A_B_A,FAIL,agent_end_chat,6,7-Sept,no redundant reload,PASS,load order [baggage → lost_baggage → baggage]
+TC10_baggage_lost_baggage_baggage_quote,switch_back_A_B_A,FAIL,agent_end_chat,6,7-Sept,tools only from applied skill,PASS,ok
+TC10_baggage_lost_baggage_baggage_quote,switch_back_A_B_A,FAIL,agent_end_chat,6,7-Sept,required tools called,FAIL,missing [quote_extra_bags]
+TC10_baggage_lost_baggage_baggage_quote,switch_back_A_B_A,FAIL,agent_end_chat,6,7-Sept,no forbidden tools,PASS,ok
+TC10_baggage_lost_baggage_baggage_quote,switch_back_A_B_A,FAIL,agent_end_chat,6,7-Sept,file_baggage_report arguments,PASS,ok
+TC10_baggage_lost_baggage_baggage_quote,switch_back_A_B_A,FAIL,agent_end_chat,6,7-Sept,quote_extra_bags arguments,FAIL,never called
+TC10_baggage_lost_baggage_baggage_quote,switch_back_A_B_A,FAIL,agent_end_chat,6,7-Sept,end_chat,PASS,reason=RESOLVED resolved=true
+TC10_baggage_lost_baggage_baggage_quote,switch_back_A_B_A,FAIL,agent_end_chat,6,7-Sept,facts told to customer,PASS,ok
