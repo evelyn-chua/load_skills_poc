@@ -3,11 +3,12 @@ import type { LanguageModel, ToolSet } from 'ai';
 import { z } from 'zod';
 import { runTurn } from './agent';
 import { addUserMessage, createThread, getThread, waitForTurn, type StoredMessage } from './threads';
+import type { PhoenixTracing } from './tracing';
 
 const CreateThreadBody = z.object({ system_prompt: z.string().min(1) });
 const MessageBody = z.object({ text: z.string().min(1) });
 
-export function createApp({ model, tools }: { model: LanguageModel; tools: ToolSet }): Hono {
+export function createApp({ model, tools, tracing }: { model: LanguageModel; tools: ToolSet; tracing?: PhoenixTracing | null }): Hono {
   const app = new Hono();
 
   app.post('/threads', async (c) => {
@@ -33,7 +34,15 @@ export function createApp({ model, tools }: { model: LanguageModel; tools: ToolS
     if (slot.kind === 'failed') return c.json({ error: 'The agent could not answer this message.' }, 500);
 
     const { turn } = slot;
-    const { result, done } = runTurn({ model, tools, systemPrompt: turn.systemPrompt, history: turn.history, record: turn.record });
+    const { result, done } = runTurn({
+      model,
+      tools,
+      systemPrompt: turn.systemPrompt,
+      history: turn.history,
+      record: turn.record,
+      // Each span names its conversation, so Phoenix groups a thread's turns into one session.
+      telemetry: tracing?.telemetry(() => ({ 'gen_ai.conversation.id': thread.id, 'session.id': thread.id })),
+    });
     const finished = done.then(
       (replies) => {
         turn.end(true);

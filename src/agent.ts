@@ -1,4 +1,4 @@
-import { isStepCount, streamText, type LanguageModel, type ModelMessage, type StepResult, type ToolSet } from 'ai';
+import { isStepCount, streamText, type LanguageModel, type ModelMessage, type StepResult, type TelemetryOptions, type ToolSet } from 'ai';
 import type { AgentMessage, StoredMessage } from './threads';
 
 /** Without a step budget the AI SDK runs one step, so the agent would never reply after a tool. */
@@ -11,6 +11,8 @@ export interface TurnInput {
   history: StoredMessage[];
   /** Stores a reply or a tool row, as each step ends. */
   record: (message: AgentMessage) => void;
+  /** Traces the turn (tracing.ts). Absent: untraced. */
+  telemetry?: TelemetryOptions;
 }
 
 /**
@@ -31,6 +33,7 @@ export function runTurn(input: TurnInput) {
     messages: toModelMessages(input.history),
     tools: input.tools,
     stopWhen: isStepCount(MAX_STEPS),
+    ...(input.telemetry ? { telemetry: input.telemetry } : {}),
     onError: ({ error }) => {
       failure ??= { error };
     },

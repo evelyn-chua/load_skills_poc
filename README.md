@@ -8,7 +8,7 @@ agent's tools, and calls Baseten (`zai-org/GLM-5.3-Flash`) on its OpenAI-compati
 
 ```bash
 pnpm install
-cp .env.example .env    # fill in BASETEN_API_KEY (Studio's .env has one)
+cp .env.example .env    # fill in BASETEN_API_KEY (Studio's .env has one); OTLP_* to trace to Phoenix
 pnpm dev                # chat page at http://localhost:3000
 pnpm test
 ```
@@ -16,6 +16,9 @@ pnpm test
 The chat page (`public/index.html`) takes a system prompt, starts a thread, and streams the
 agent's replies, one bubble per step, with tool calls as grey lines. You can send several messages
 before the agent replies.
+
+With `OTLP_ENDPOINT` and `OTLP_API_KEY` set, each turn appears in Phoenix (Arize) under the project
+`load-skills-poc`, and a conversation's turns are grouped into one session.
 
 ## Talk to it
 

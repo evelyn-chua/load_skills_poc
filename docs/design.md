@@ -11,6 +11,7 @@ server:
 - stores the thread
 - runs the agent's tools
 - calls the LLM on the Chat Completions API (Baseten, `zai-org/GLM-5.3-Flash`)
+- traces every turn to Phoenix (Arize)
 
 Studio sources:
 
@@ -31,12 +32,13 @@ Studio sources:
 
 ```
 src/
-  main.ts      boots the server: model + tools → createApp → serve, plus the chat page at /
+  main.ts      boots the server: model + tools + tracing → createApp → serve, plus the chat page at /
   app.ts       HTTP routes (Hono)
   threads.ts   in-memory threads, and one turn per thread at a time  ← thread-turns.ts
   agent.ts     one turn: streamText tool loop, per-step recording   ← core.ts
   model.ts     the Baseten model (OpenAI-compatible Chat Completions)
   tools.ts     the tools the agent can call: add yours here
+  tracing.ts   Phoenix tracing                                     ← Studio's lib/chat-tracing/
 public/
   index.html   the chat page: plain HTML + JS, reads the streamed replies; no build step
 tests/         Vitest with the AI SDK's mock model: the real loop runs, no network
@@ -52,6 +54,21 @@ in every request body, as Studio sends it.
 
 - The model's reasoning text is not read; only its answer is.
 - Configured by `BASETEN_API_KEY`, `BASETEN_MODEL` and `BASETEN_REASONING_EFFORT`.
+
+## Tracing
+
+Every turn is traced to Phoenix (Arize) over OTLP/HTTP, as Studio's chat is (`lib/chat-tracing/`).
+The AI SDK's spans are turned into OpenInference spans by Arize's processor.
+
+- **Configuration:** `OTLP_ENDPOINT`, `OTLP_AUTH_HEADER` and `OTLP_API_KEY` (Studio's variable
+  names). The project is `load-skills-poc`, or `PHOENIX_PROJECT_NAME`.
+- **Off by default:** tracing is off when the endpoint or key is unset.
+- **What a trace contains:** one trace per turn: `invoke_agent chat-turn` → `step n` → the LLM call
+  and each tool call.
+- **Sessions:** every span carries `session.id`, the thread id, so Phoenix groups a conversation's
+  turns into one session.
+- **Content is recorded:** prompts, messages, and tool arguments and results.
+- **Shutdown:** buffered spans are sent before the server exits (`SIGINT`/`SIGTERM`).
 
 ## API
 
