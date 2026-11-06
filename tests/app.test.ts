@@ -1,14 +1,15 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createApp } from '../src/app';
+import { loadAgentConfig } from '../src/config';
 import { gate, scriptedModel, seenBy, type ScriptedStep } from './mock-model';
 
 function setup(steps: Parameters<typeof scriptedModel>[0]) {
   const model = scriptedModel(steps);
-  const app = createApp({ model, tools: {} });
+  const app = createApp({ model, config: loadAgentConfig() });
   const post = (path: string, body: unknown) =>
     app.request(path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
   const startThread = async () => {
-    const res = await post('/threads', { system_prompt: 'You are a support agent.' });
+    const res = await post('/threads', {});
     return ((await res.json()) as { thread_id: string }).thread_id;
   };
   const transcript = async (threadId: string) => (await (await app.request(`/threads/${threadId}`)).json()) as { messages: Array<{ role: string; text?: string }> };
@@ -22,12 +23,11 @@ describe('the chat API', () => {
 
     const first = await post(`/threads/${threadId}/messages`, { text: 'hi' });
     expect(first.status).toBe(200);
-    expect(await first.json()).toEqual({ replies: ['Hi! How can I help?'] });
+    expect(await first.json()).toEqual({ replies: ['Hi! How can I help?'], ended: false });
 
     const second = await post(`/threads/${threadId}/messages`, { text: 'I need help with an order' });
-    expect(await second.json()).toEqual({ replies: ['Sure, which order?'] });
-    expect(seenBy(model, 1)).toEqual([
-      'system: You are a support agent.',
+    expect(await second.json()).toEqual({ replies: ['Sure, which order?'], ended: false });
+    expect(seenBy(model, 1).slice(1)).toEqual([
       'user: hi',
       'assistant: Hi! How can I help?',
       'user: I need help with an order',
@@ -53,8 +53,8 @@ describe('the chat API', () => {
     await vi.waitFor(async () => expect((await transcript(threadId)).messages).toHaveLength(3));
     firstTurn.resolve({ text: 'Hi! How can I help?' });
 
-    expect(await (await hi).json()).toEqual({ replies: ['Hi! How can I help?'] });
-    expect(await (await andThat).json()).toEqual({ replies: ['Cancelled orders 1234 and 5678.'] });
+    expect(await (await hi).json()).toEqual({ replies: ['Hi! How can I help?'], ended: false });
+    expect(await (await andThat).json()).toEqual({ replies: ['Cancelled orders 1234 and 5678.'], ended: false });
     expect(await (await cancel).json()).toEqual({ replies: [], answered_with_later_message: true });
     expect(model.doStreamCalls).toHaveLength(2);
     expect(seenBy(model, 1).slice(-3)).toEqual(['assistant: Hi! How can I help?', 'user: cancel order 1234', 'user: and 5678 too']);
@@ -75,7 +75,7 @@ describe('the chat API', () => {
     expect((await hi).status).toBe(200);
     expect((await andThat).status).toBe(500);
     expect((await cancel).status).toBe(500);
-    expect(await (await post(`/threads/${threadId}/messages`, { text: 'hello?' })).json()).toEqual({ replies: ['Back now. Order 1234 is cancelled.'] });
+    expect(await (await post(`/threads/${threadId}/messages`, { text: 'hello?' })).json()).toEqual({ replies: ['Back now. Order 1234 is cancelled.'], ended: false });
   });
 
   it('streams the reply with ?stream=true, and stores it once the turn ends', async () => {
@@ -90,7 +90,6 @@ describe('the chat API', () => {
 
   it('rejects a bad request and an unknown thread', async () => {
     const { app, post, startThread } = setup([]);
-    expect((await post('/threads', {})).status).toBe(400);
     expect((await post(`/threads/${await startThread()}/messages`, { text: '' })).status).toBe(400);
     expect((await post('/threads/nope/messages', { text: 'hi' })).status).toBe(404);
     expect((await app.request('/threads/nope')).status).toBe(404);

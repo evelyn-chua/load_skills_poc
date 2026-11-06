@@ -1,4 +1,4 @@
-import { isStepCount, streamText, type LanguageModel, type ModelMessage, type StepResult, type TelemetryOptions, type ToolSet } from 'ai';
+import { hasToolCall, isStepCount, streamText, type LanguageModel, type ModelMessage, type StepResult, type TelemetryOptions, type ToolSet } from 'ai';
 import type { AgentMessage, StoredMessage } from './threads';
 
 /** Without a step budget the AI SDK runs one step, so the agent would never reply after a tool. */
@@ -6,8 +6,16 @@ const MAX_STEPS = 10;
 
 export interface TurnInput {
   model: LanguageModel;
+  /** Every tool the agent could call. `prepare` picks which are offered on each step. */
   tools: ToolSet;
-  systemPrompt: string;
+  /**
+   * The system prompt and the tools offered on a step, given the messages that step will send. Run
+   * before every step, so a tool result that changes them (load_skill) takes effect on the very next
+   * step.
+   */
+  prepare: (messages: ModelMessage[]) => { instructions: string; activeTools: string[] };
+  /** Tools that end the turn once called (end_chat). */
+  finalTools?: string[];
   history: StoredMessage[];
   /** Stores a reply or a tool row, as each step ends. */
   record: (message: AgentMessage) => void;
@@ -29,10 +37,10 @@ export function runTurn(input: TurnInput) {
   let failure: { error: unknown } | undefined;
   const result = streamText({
     model: input.model,
-    instructions: input.systemPrompt,
     messages: toModelMessages(input.history),
     tools: input.tools,
-    stopWhen: isStepCount(MAX_STEPS),
+    prepareStep: ({ messages }) => input.prepare(messages),
+    stopWhen: [isStepCount(MAX_STEPS), hasToolCall(...(input.finalTools ?? []))],
     ...(input.telemetry ? { telemetry: input.telemetry } : {}),
     onError: ({ error }) => {
       failure ??= { error };
@@ -80,7 +88,7 @@ function toolRows(step: StepResult<ToolSet>): AgentMessage[] {
  * produces (an assistant `tool-call`, then its `tool-result`), never text: a model shown a tool's
  * JSON as its own words imitates it.
  */
-function toModelMessages(history: StoredMessage[]): ModelMessage[] {
+export function toModelMessages(history: StoredMessage[]): ModelMessage[] {
   return history.flatMap((message): ModelMessage[] => {
     if (message.role !== 'tool') return [{ role: message.role, content: message.text }];
     // Arguments that are not an object (an invalid call's raw text) are replayed as {}, which every provider accepts.

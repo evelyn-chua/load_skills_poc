@@ -1,14 +1,14 @@
 import { serve } from '@hono/node-server';
 import { serveStatic } from '@hono/node-server/serve-static';
 import { createApp } from './app';
+import { loadAgentConfig } from './config';
 import { createChatModel } from './model';
-import { tools } from './tools';
 import { createPhoenixTracing } from './tracing';
 
 const tracing = createPhoenixTracing();
 console.log(tracing ? `tracing to Phoenix project "${tracing.project}" at ${tracing.url}` : 'tracing off: OTLP_ENDPOINT or OTLP_API_KEY is not set');
 
-const app = createApp({ model: createChatModel(), tools, tracing });
+const app = createApp({ model: createChatModel(), config: loadAgentConfig(), tracing });
 // The POC's chat page (public/index.html), which talks to the API above.
 app.get('/', serveStatic({ path: './public/index.html' }));
 

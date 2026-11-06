@@ -1,0 +1,660 @@
+[
+  {
+    "name": "verify_identity",
+    "description": "Look up a booking and verify the customer owns it. Required by every skill that reads or changes a booking.",
+    "depends_on": [],
+    "instructions": "1. Ask for the booking reference (6 characters) and the last name on the booking in a single message. Do not guess either.\n2. Remove spaces and uppercase the reference before calling get_booking. If it isn't 6 characters, ask the customer to double-check it; common mix-ups are 0/O, 1/I and 5/S.\n3. If verified is false, say the details didn't match and ask them to check again. After a second failure, stop trying: load human_handoff with reason VERIFICATION_FAILED.\n4. Once verified, greet the customer by first name and confirm the trip in one line (route and date of the next flight), so they know you have the right booking. Never read out email, phone or payment details.\n5. Remember the booking, its segment_ids and passenger_ids for the rest of the conversation. Don't verify again unless the customer brings up a different booking.\n6. If the booking status is CANCELLED, say so and ask what they need. Don't offer changes to a cancelled booking.\n7. Then go back to the job that required verification.",
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "get_booking",
+          "description": "Verify a customer and retrieve their booking using the booking reference and last name.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "booking_reference": { "type": "string", "pattern": "^[A-Z0-9]{6}$", "description": "6-character booking reference, uppercased, e.g. K7XQ2M." },
+              "last_name": { "type": "string", "description": "Last name of any passenger on the booking." }
+            },
+            "required": ["booking_reference", "last_name"],
+            "additionalProperties": false
+          }
+        },
+        "response": {
+          "verified": true,
+          "booking_reference": "K7XQ2M",
+          "status": "CONFIRMED",
+          "passengers": [
+            { "passenger_id": "P1", "first_name": "Jordan", "last_name": "Rivera", "type": "ADULT", "loyalty_tier": "SILVER" },
+            { "passenger_id": "P2", "first_name": "Sam", "last_name": "Rivera", "type": "CHILD" }
+          ],
+          "segments": [
+            { "segment_id": "S1", "flight_number": "MR214", "origin": "JFK", "destination": "LHR", "departure_local": "2026-11-20T19:30", "arrival_local": "2026-11-21T07:40", "cabin": "ECONOMY", "fare_family": "STANDARD", "status": "CONFIRMED" },
+            { "segment_id": "S2", "flight_number": "MR215", "origin": "LHR", "destination": "JFK", "departure_local": "2026-11-28T11:15", "arrival_local": "2026-11-28T14:25", "cabin": "ECONOMY", "fare_family": "STANDARD", "status": "CONFIRMED" }
+          ],
+          "total_paid": { "amount": 1842.60, "currency": "USD" },
+          "contact_email_masked": "j****@gmail.com"
+        }
+      }
+    ]
+  },
+  {
+    "name": "flight_status",
+    "description": "Live status of a flight: on time, delayed, cancelled, gate and terminal. No verification needed.",
+    "depends_on": [],
+    "instructions": "1. You need a flight number and a departure date. If verify_identity is already loaded and the customer is verified, take both from their booking instead of asking.\n2. If they give only a route, ask for the flight number. Don't guess it.\n3. Convert 'today' or 'tomorrow' into a date using today's date.\n4. Lead with the answer: on time, delayed by how long, or cancelled. Then give the terminal and gate if the result includes them.\n5. If the flight is delayed by 3 hours or more, or cancelled, offer to rebook (load reschedule_flight) or cancel (load cancel_booking). Don't promise compensation; say eligibility depends on the cause and is assessed separately.\n6. Gates and times can change, so remind the customer to check the airport screens.",
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "get_flight_status",
+          "description": "Get the live status of a Meridian Air flight.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "flight_number": { "type": "string", "pattern": "^MR[0-9]{1,4}$", "description": "Flight number with the MR prefix, e.g. MR214." },
+              "departure_date": { "type": "string", "format": "date", "description": "Scheduled local departure date, YYYY-MM-DD." }
+            },
+            "required": ["flight_number", "departure_date"],
+            "additionalProperties": false
+          }
+        },
+        "response": {
+          "flight_number": "MR214",
+          "departure_date": "2026-11-20",
+          "status": "DELAYED",
+          "delay_minutes": 95,
+          "delay_reason": "Late inbound aircraft",
+          "origin": { "airport": "JFK", "terminal": "4", "gate": "B32" },
+          "destination": { "airport": "LHR", "terminal": "2" },
+          "scheduled_departure_local": "2026-11-20T19:30",
+          "estimated_departure_local": "2026-11-20T21:05",
+          "scheduled_arrival_local": "2026-11-21T07:40",
+          "estimated_arrival_local": "2026-11-21T09:10",
+          "last_updated_utc": "2026-11-20T21:02:00Z"
+        }
+      }
+    ]
+  },
+  {
+    "name": "cancel_booking",
+    "description": "Quote and cancel a whole trip or individual legs, with refund to the original payment or as travel credit.",
+    "depends_on": ["verify_identity"],
+    "instructions": "1. Make sure the customer is verified (follow verify_identity first).\n2. Confirm what they want to cancel: the whole trip or one leg. If they actually want a different date, suggest rescheduling instead (load reschedule_flight), since it's often cheaper.\n3. Call get_cancellation_quote. Explain in plain words what gets cancelled, the fee, and what they'd get back with each refund option. If the quote has a warning (for example, cancelling the outbound also cancels the return), state it clearly.\n4. If the flight was cancelled or heavily delayed by Meridian, the quote will show waiver_applied: true. Tell them there's no fee.\n5. Ask them to choose a refund option from the quote and to confirm with a clear yes. Repeat the amount in that question.\n6. Only after that yes, call cancel_segments with the quote_id and the chosen refund_method. Quotes expire; if the result says the quote expired, get a new quote and confirm again.\n7. Give the cancellation confirmation number, the refund timeline, and any travel credit code with its expiry date.",
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "get_cancellation_quote",
+          "description": "Get what would happen if the given segments were cancelled: fees, refund options and warnings. Changes nothing.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "booking_reference": { "type": "string" },
+              "segment_ids": { "type": "array", "items": { "type": "string" }, "minItems": 1, "description": "Segments to cancel, e.g. [\"S1\",\"S2\"]." }
+            },
+            "required": ["booking_reference", "segment_ids"],
+            "additionalProperties": false
+          }
+        },
+        "response": {
+          "quote_id": "CQ-7731902",
+          "quote_expires_utc": "2026-11-06T16:15:00Z",
+          "booking_reference": "K7XQ2M",
+          "segments_to_cancel": ["S1", "S2"],
+          "waiver_applied": false,
+          "cancellation_fee": { "amount": 150.00, "currency": "USD" },
+          "refund_options": [
+            { "method": "ORIGINAL_PAYMENT", "amount": 1242.60, "currency": "USD", "eta_business_days": "7-10" },
+            { "method": "TRAVEL_CREDIT", "amount": 1692.60, "currency": "USD", "credit_expiry": "2027-11-06" }
+          ],
+          "warnings": []
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "cancel_segments",
+          "description": "Cancel segments using a quote the customer has explicitly accepted. Irreversible.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "booking_reference": { "type": "string" },
+              "quote_id": { "type": "string", "description": "quote_id from get_cancellation_quote." },
+              "refund_method": { "type": "string", "enum": ["ORIGINAL_PAYMENT", "TRAVEL_CREDIT"] }
+            },
+            "required": ["booking_reference", "quote_id", "refund_method"],
+            "additionalProperties": false
+          }
+        },
+        "response": {
+          "success": true,
+          "booking_reference": "K7XQ2M",
+          "cancelled_segments": ["S1", "S2"],
+          "booking_status": "CANCELLED",
+          "refund_method": "TRAVEL_CREDIT",
+          "refund_amount": { "amount": 1692.60, "currency": "USD" },
+          "credit_code": "MRCR-4T9K-22LQ",
+          "credit_expiry": "2027-11-06",
+          "cancellation_confirmation": "CXL-88213407"
+        }
+      }
+    ]
+  },
+  {
+    "name": "reschedule_flight",
+    "description": "Find alternative flights for one leg and rebook the customer onto the one they pick.",
+    "depends_on": ["verify_identity"],
+    "instructions": "1. Make sure the customer is verified.\n2. Confirm which leg they want to move and their preferred new date. Ask about time of day only if they seem to care.\n3. Call search_alternative_flights. Offer up to 3 options in a short list: flight number, departure and arrival times, and the total to pay (change fee plus fare difference). Point out any option that costs nothing extra.\n4. If waiver_applied is true (Meridian cancelled or heavily delayed the original), tell them the change is free.\n5. When they choose, restate the flight and the total, and get a clear yes.\n6. Then call rebook_segment with the option_id. If the result includes a payment_link rather than a charge to the card on file, share the link and explain the new flight is held until hold_expires_local.\n7. Give the new flight details and confirmation number. If seats_carried_over is false, mention it and offer to pick seats (load seat_selection).\n8. Never change a leg the customer didn't ask about. If moving the outbound affects the return, explain that before rebooking.",
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "search_alternative_flights",
+          "description": "Search alternative flights for one segment, with the cost to change to each.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "booking_reference": { "type": "string" },
+              "segment_id": { "type": "string" },
+              "new_date": { "type": "string", "format": "date" },
+              "time_preference": { "type": "string", "enum": ["ANY", "MORNING", "AFTERNOON", "EVENING"], "default": "ANY" }
+            },
+            "required": ["booking_reference", "segment_id", "new_date"],
+            "additionalProperties": false
+          }
+        },
+        "response": {
+          "segment_id": "S1",
+          "waiver_applied": false,
+          "options": [
+            { "option_id": "OPT-1", "flight_number": "MR210", "origin": "JFK", "destination": "LHR", "departure_local": "2026-11-21T09:00", "arrival_local": "2026-11-21T21:05", "cabin": "ECONOMY", "change_fee": { "amount": 0.00, "currency": "USD" }, "fare_difference": { "amount": 0.00, "currency": "USD" }, "total_due": { "amount": 0.00, "currency": "USD" }, "seats_left": 9 },
+            { "option_id": "OPT-2", "flight_number": "MR214", "origin": "JFK", "destination": "LHR", "departure_local": "2026-11-21T19:30", "arrival_local": "2026-11-22T07:40", "cabin": "ECONOMY", "change_fee": { "amount": 0.00, "currency": "USD" }, "fare_difference": { "amount": 64.00, "currency": "USD" }, "total_due": { "amount": 64.00, "currency": "USD" }, "seats_left": 4 }
+          ],
+          "notes": "STANDARD fares have no change fee; fare difference applies."
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "rebook_segment",
+          "description": "Move a segment onto an option from search_alternative_flights. Charges any amount due.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "booking_reference": { "type": "string" },
+              "segment_id": { "type": "string" },
+              "option_id": { "type": "string" }
+            },
+            "required": ["booking_reference", "segment_id", "option_id"],
+            "additionalProperties": false
+          }
+        },
+        "response": {
+          "success": true,
+          "booking_reference": "K7XQ2M",
+          "old_segment": { "segment_id": "S1", "flight_number": "MR214", "departure_local": "2026-11-20T19:30" },
+          "new_segment": { "segment_id": "S1", "flight_number": "MR210", "origin": "JFK", "destination": "LHR", "departure_local": "2026-11-21T09:00", "arrival_local": "2026-11-21T21:05" },
+          "amount_charged": { "amount": 0.00, "currency": "USD" },
+          "payment_link": null,
+          "hold_expires_local": null,
+          "seats_carried_over": false,
+          "bags_carried_over": true,
+          "change_confirmation": "CHG-30418876"
+        }
+      }
+    ]
+  },
+  {
+    "name": "baggage",
+    "description": "Carry-on and checked bag allowances, extra bag fees, and buying extra checked bags.",
+    "depends_on": ["verify_identity"],
+    "instructions": "1. For a general policy question with no booking, you can call get_baggage_allowance with cabin, fare_family and route_type, without verification. Ask for any of those that are missing. Don't assume them.\n2. If the customer has a booking, verify them and use the booking. The allowance depends on fare, route and loyalty tier, so the booking answer is the accurate one.\n3. Answer in this order: carry-on, personal item, included checked bags, then fees for extra bags. Give both metric and imperial measurements.\n4. To buy extra bags, confirm the passenger, how many bags, and whether they're for the whole trip or one direction (suggest the whole trip). Call quote_extra_bags, state the total, and mention the airport price if it's higher.\n5. Get a clear yes, then call purchase_extra_bags with the quote_id. Give the confirmation number and repeat the weight limit per bag.\n6. If purchasing is closed (within 3 hours of departure), tell them to pay at the airport counter.\n7. For sports equipment, musical instruments, mobility aids or dangerous goods, don't improvise. Load human_handoff with reason SPECIAL_BAGGAGE.",
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "get_baggage_allowance",
+          "description": "Get baggage allowance and fees for passengers on a booking, or the general allowance for a cabin, fare and route.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "booking_reference": { "type": "string", "description": "Omit for a general question." },
+              "passenger_id": { "type": "string", "description": "Omit to return all passengers." },
+              "cabin": { "type": "string", "enum": ["ECONOMY", "PREMIUM_ECONOMY", "BUSINESS"] },
+              "fare_family": { "type": "string", "enum": ["BASIC", "STANDARD", "FLEX"] },
+              "route_type": { "type": "string", "enum": ["DOMESTIC", "INTERNATIONAL"] }
+            },
+            "required": [],
+            "additionalProperties": false
+          }
+        },
+        "response": {
+          "booking_reference": "K7XQ2M",
+          "allowances": [
+            {
+              "passenger_id": "P1",
+              "name": "Jordan Rivera",
+              "carry_on": { "count": 1, "max_weight_kg": 10, "max_weight_lb": 22, "max_dimensions_cm": "56x36x23", "max_dimensions_in": "22x14x9" },
+              "personal_item": { "count": 1, "max_dimensions_cm": "40x30x15", "max_dimensions_in": "16x12x6" },
+              "checked_included": { "count": 2, "max_weight_kg_each": 23, "max_weight_lb_each": 50, "note": "1 from STANDARD fare + 1 from SILVER tier" }
+            },
+            {
+              "passenger_id": "P2",
+              "name": "Sam Rivera",
+              "carry_on": { "count": 1, "max_weight_kg": 10, "max_weight_lb": 22, "max_dimensions_cm": "56x36x23", "max_dimensions_in": "22x14x9" },
+              "personal_item": { "count": 1, "max_dimensions_cm": "40x30x15", "max_dimensions_in": "16x12x6" },
+              "checked_included": { "count": 1, "max_weight_kg_each": 23, "max_weight_lb_each": 50 }
+            }
+          ],
+          "extra_bag_fees": {
+            "per_bag_per_segment_online": { "amount": 75.00, "currency": "USD" },
+            "per_bag_per_segment_airport": { "amount": 100.00, "currency": "USD" },
+            "overweight_23_to_32kg": { "amount": 100.00, "currency": "USD" }
+          }
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "quote_extra_bags",
+          "description": "Price extra checked bags for a passenger on given segments. Changes nothing.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "booking_reference": { "type": "string" },
+              "passenger_id": { "type": "string" },
+              "segment_ids": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+              "quantity": { "type": "integer", "minimum": 1, "maximum": 3 }
+            },
+            "required": ["booking_reference", "passenger_id", "segment_ids", "quantity"],
+            "additionalProperties": false
+          }
+        },
+        "response": {
+          "quote_id": "BQ-551209",
+          "purchasable": true,
+          "passenger_id": "P1",
+          "segment_ids": ["S1", "S2"],
+          "quantity": 1,
+          "total_online": { "amount": 150.00, "currency": "USD" },
+          "total_if_paid_at_airport": { "amount": 200.00, "currency": "USD" },
+          "payment_method_on_file": "Visa ending 4417"
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "purchase_extra_bags",
+          "description": "Buy extra bags using a quote the customer has explicitly accepted. Charges the card on file.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "booking_reference": { "type": "string" },
+              "quote_id": { "type": "string" }
+            },
+            "required": ["booking_reference", "quote_id"],
+            "additionalProperties": false
+          }
+        },
+        "response": {
+          "success": true,
+          "confirmation_number": "BAG-55120931",
+          "total_charged": { "amount": 150.00, "currency": "USD" },
+          "payment_method": "Visa ending 4417",
+          "new_checked_allowance": { "passenger_id": "P1", "count": 3, "max_weight_kg_each": 23, "max_weight_lb_each": 50 }
+        }
+      }
+    ]
+  },
+  {
+    "name": "seat_selection",
+    "description": "View available seats and assign or change seats, including paid and extra-legroom seats.",
+    "depends_on": ["verify_identity"],
+    "instructions": "1. Make sure the customer is verified. Confirm which flight and what they prefer: window, aisle, extra legroom, or sitting together.\n2. Call get_seat_map with that preference. Offer at most 3 good matches with prices. Don't list the whole map.\n3. If a passenger is a CHILD or INFANT, prioritise seats together and mention that children can't sit in exit rows.\n4. For a paid seat, state the price and get a clear yes before assigning. A free seat can be assigned as soon as the customer picks it.\n5. Call assign_seat once per passenger. Payment for paid seats goes to the card on file.\n6. Confirm the seat numbers. If a seat was taken in the meantime, apologise and offer the next best options.",
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "get_seat_map",
+          "description": "Get available seats on a segment matching a preference, with prices.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "booking_reference": { "type": "string" },
+              "segment_id": { "type": "string" },
+              "preference": { "type": "string", "enum": ["ANY", "WINDOW", "AISLE", "EXTRA_LEGROOM", "TOGETHER"], "default": "ANY" }
+            },
+            "required": ["booking_reference", "segment_id"],
+            "additionalProperties": false
+          }
+        },
+        "response": {
+          "segment_id": "S1",
+          "aircraft": "Boeing 787-9",
+          "matching_seats": [
+            { "seat_number": "23A", "type": "WINDOW", "features": ["standard"], "price": { "amount": 0.00, "currency": "USD" }, "adjacent_to": ["23B"] },
+            { "seat_number": "23B", "type": "MIDDLE", "features": ["standard"], "price": { "amount": 0.00, "currency": "USD" }, "adjacent_to": ["23A", "23C"] },
+            { "seat_number": "14C", "type": "AISLE", "features": ["extra_legroom"], "price": { "amount": 89.00, "currency": "USD" }, "adjacent_to": ["14B"] }
+          ],
+          "current_assignments": [
+            { "passenger_id": "P1", "seat_number": null },
+            { "passenger_id": "P2", "seat_number": null }
+          ],
+          "restrictions": ["Exit rows 31 and 32 unavailable for passengers under 15."]
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "assign_seat",
+          "description": "Assign a seat to one passenger on a segment. Charges the card on file if the seat has a price.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "booking_reference": { "type": "string" },
+              "segment_id": { "type": "string" },
+              "passenger_id": { "type": "string" },
+              "seat_number": { "type": "string", "pattern": "^[0-9]{1,2}[A-K]$" }
+            },
+            "required": ["booking_reference", "segment_id", "passenger_id", "seat_number"],
+            "additionalProperties": false
+          }
+        },
+        "response": {
+          "success": true,
+          "segment_id": "S1",
+          "passenger_id": "P1",
+          "seat_number": "23A",
+          "amount_charged": { "amount": 0.00, "currency": "USD" },
+          "confirmation_number": "SEAT-90217744"
+        }
+      }
+    ]
+  },
+  {
+    "name": "check_in",
+    "description": "Check passengers in online and send boarding passes.",
+    "depends_on": ["verify_identity"],
+    "instructions": "1. Make sure the customer is verified. Check-in opens 24 hours and closes 1 hour before departure (3 hours for international flights from some airports). The tools enforce this; don't promise otherwise.\n2. Call get_check_in_eligibility for the segment. If it isn't open yet, give the time it opens. If it's closed, tell them to go to the airport counter now.\n3. If a passenger needs documents (passport details, visa), say so and give the document_link from the result. Never collect passport numbers in chat.\n4. If passengers don't have seats, the system assigns them for free at check-in. Mention that, and offer seat_selection first if they care where they sit.\n5. Confirm which passengers to check in, then call check_in_passengers.\n6. Ask how they want boarding passes (email, SMS, or wallet) and call send_boarding_passes. Remind them of boarding time and gate if the result includes them.",
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "get_check_in_eligibility",
+          "description": "See whether passengers can check in for a segment and what's still needed.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "booking_reference": { "type": "string" },
+              "segment_id": { "type": "string" }
+            },
+            "required": ["booking_reference", "segment_id"],
+            "additionalProperties": false
+          }
+        },
+        "response": {
+          "segment_id": "S1",
+          "check_in_status": "OPEN",
+          "opens_local": "2026-11-19T19:30",
+          "closes_local": "2026-11-20T18:30",
+          "passengers": [
+            { "passenger_id": "P1", "eligible": true, "documents_required": false, "seat_number": "23A" },
+            { "passenger_id": "P2", "eligible": false, "documents_required": true, "missing": ["PASSPORT_DETAILS"], "seat_number": null }
+          ],
+          "document_link": "https://meridianair.example/checkin/K7XQ2M/documents"
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "check_in_passengers",
+          "description": "Check in the given passengers on a segment.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "booking_reference": { "type": "string" },
+              "segment_id": { "type": "string" },
+              "passenger_ids": { "type": "array", "items": { "type": "string" }, "minItems": 1 }
+            },
+            "required": ["booking_reference", "segment_id", "passenger_ids"],
+            "additionalProperties": false
+          }
+        },
+        "response": {
+          "success": true,
+          "segment_id": "S1",
+          "checked_in": [ { "passenger_id": "P1", "seat_number": "23A", "boarding_group": "4" } ],
+          "failed": [],
+          "boarding_time_local": "2026-11-20T18:50",
+          "gate": "B32"
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "send_boarding_passes",
+          "description": "Send boarding passes for checked-in passengers to the contact details on the booking.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "booking_reference": { "type": "string" },
+              "segment_id": { "type": "string" },
+              "passenger_ids": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+              "delivery": { "type": "string", "enum": ["EMAIL", "SMS", "WALLET"] }
+            },
+            "required": ["booking_reference", "segment_id", "passenger_ids", "delivery"],
+            "additionalProperties": false
+          }
+        },
+        "response": {
+          "success": true,
+          "delivery": "EMAIL",
+          "sent_to": "j****@gmail.com",
+          "passenger_ids": ["P1"]
+        }
+      }
+    ]
+  },
+  {
+    "name": "lost_baggage",
+    "description": "File a delayed, damaged or missing-contents baggage report, track an existing report, or update its delivery address.",
+    "depends_on": ["verify_identity"],
+    "instructions": "1. Start with empathy: a missing bag is stressful. Keep your questions short.\n2. If the customer already has a file reference, call get_baggage_report. You don't need booking verification for this; the reference is enough.\n3. For a new report, verify them first. Then collect, in as few messages as possible: bag tag number, issue type, bag description (color, type, brand, anything distinctive), delivery address, and phone.\n4. For DAMAGED or MISSING_CONTENTS, ask them to keep the bag and any damaged items, and say photos will be requested by email.\n5. After filing, give the file reference, the current status, and when to expect the next update.\n6. You may mention the interim-expenses policy as the tool returns it, but never approve or promise a specific reimbursement.\n7. If they're moving on (for example, to a new hotel), use update_baggage_delivery_address.\n8. If the bag has been missing more than 21 days, or they want to claim compensation, load human_handoff with reason COMPENSATION_CLAIM.",
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "file_baggage_report",
+          "description": "File a new baggage report.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "booking_reference": { "type": "string" },
+              "passenger_id": { "type": "string" },
+              "bag_tag_number": { "type": "string", "description": "10-digit number from the bag tag receipt." },
+              "issue_type": { "type": "string", "enum": ["DELAYED", "DAMAGED", "MISSING_CONTENTS"] },
+              "bag_description": {
+                "type": "object",
+                "properties": {
+                  "color": { "type": "string" },
+                  "type": { "type": "string", "enum": ["SUITCASE_HARD", "SUITCASE_SOFT", "DUFFEL", "BACKPACK", "OTHER"] },
+                  "brand": { "type": "string" },
+                  "distinguishing_features": { "type": "string" }
+                },
+                "required": ["color", "type"]
+              },
+              "delivery_address": { "type": "string" },
+              "contact_phone": { "type": "string" }
+            },
+            "required": ["booking_reference", "passenger_id", "bag_tag_number", "issue_type", "bag_description", "delivery_address", "contact_phone"],
+            "additionalProperties": false
+          }
+        },
+        "response": {
+          "success": true,
+          "file_reference": "LHRMR40127",
+          "status": "TRACING",
+          "status_detail": "Bag located at JFK, did not make connection. Booked on MR210 arriving LHR 2026-11-21 21:05.",
+          "expected_delivery_window": "2026-11-22 between 10:00 and 18:00 local",
+          "next_update_by_local": "2026-11-22T12:00",
+          "interim_expenses_policy": "Reasonable purchases of essentials may be claimed with receipts, up to USD 50 per day for up to 5 days, subject to review.",
+          "tracking_url": "https://meridianair.example/bags/LHRMR40127"
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "get_baggage_report",
+          "description": "Get the current status of an existing baggage report.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "file_reference": { "type": "string", "description": "e.g. LHRMR40127" },
+              "last_name": { "type": "string", "description": "Last name on the report, for verification." }
+            },
+            "required": ["file_reference", "last_name"],
+            "additionalProperties": false
+          }
+        },
+        "response": {
+          "file_reference": "LHRMR40127",
+          "status": "OUT_FOR_DELIVERY",
+          "status_detail": "Bag with courier, expected today.",
+          "expected_delivery_window": "2026-11-22 between 14:00 and 18:00 local",
+          "delivery_address_on_file": "The Langham, 1C Portland Pl, London W1B 1JA",
+          "days_open": 1
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "update_baggage_delivery_address",
+          "description": "Change the delivery address on an open baggage report.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "file_reference": { "type": "string" },
+              "new_address": { "type": "string" },
+              "available_from_local": { "type": "string", "format": "date-time", "description": "Optional: when the customer will be at the new address." }
+            },
+            "required": ["file_reference", "new_address"],
+            "additionalProperties": false
+          }
+        },
+        "response": {
+          "success": true,
+          "file_reference": "LHRMR40127",
+          "delivery_address_on_file": "Hilton Edinburgh Carlton, 1 North Bridge, Edinburgh EH1 1SD",
+          "note": "Address change may add up to 24 hours to delivery."
+        }
+      }
+    ]
+  },
+  {
+    "name": "refunds_and_credits",
+    "description": "Status of refunds from past cancellations, and balances of travel credits.",
+    "depends_on": ["verify_identity"],
+    "instructions": "1. Make sure the customer is verified. A cancelled booking can still be verified.\n2. For refunds, call get_refund_status. Report the status (requested, processing, issued or rejected), the amount and the method.\n3. If the status is ISSUED to the original payment, give the issue date and say banks usually take the number of business days in the result to show it.\n4. If today is past expected_by_date and it isn't issued, apologise and load human_handoff with reason REFUND_DELAYED.\n5. If the status is REJECTED, give the reason in plain words. Don't argue with it or re-decide it; offer human_handoff if they want it reviewed.\n6. For travel credits, call get_travel_credits and give the credit code, remaining balance and expiry. If a credit expires within 30 days, point that out.",
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "get_refund_status",
+          "description": "Get refunds linked to a booking.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "booking_reference": { "type": "string" },
+              "cancellation_confirmation": { "type": "string", "description": "Optional, e.g. CXL-87990215." }
+            },
+            "required": ["booking_reference"],
+            "additionalProperties": false
+          }
+        },
+        "response": {
+          "booking_reference": "H2PL9W",
+          "refunds": [
+            {
+              "cancellation_confirmation": "CXL-87990215",
+              "status": "PROCESSING",
+              "amount": { "amount": 412.30, "currency": "USD" },
+              "method": "ORIGINAL_PAYMENT",
+              "payment_method": "Mastercard ending 0932",
+              "requested_on": "2026-10-29",
+              "expected_by_date": "2026-11-12",
+              "bank_posting_business_days": "5-10",
+              "rejection_reason": null
+            }
+          ]
+        }
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "get_travel_credits",
+          "description": "List travel credits held by the passengers on a booking.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "booking_reference": { "type": "string" },
+              "passenger_id": { "type": "string", "description": "Optional; omit for all passengers." }
+            },
+            "required": ["booking_reference"],
+            "additionalProperties": false
+          }
+        },
+        "response": {
+          "credits": [
+            {
+              "credit_code": "MRCR-4T9K-22LQ",
+              "holder": "Jordan Rivera",
+              "original_amount": { "amount": 1692.60, "currency": "USD" },
+              "remaining_balance": { "amount": 1692.60, "currency": "USD" },
+              "expiry": "2027-11-06",
+              "transferable": false
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "name": "human_handoff",
+    "description": "Transfer to a human agent. For explicit requests, complaints, compensation claims, special assistance, special baggage, repeated failures, or anything out of scope.",
+    "depends_on": [],
+    "instructions": "1. If the customer asks for a person, hand off. You may offer once to help first, but don't push.\n2. Before calling escalate_to_human, write a summary the human agent can act on without asking the customer to repeat anything: their goal, what you checked or did, the results, and every reference number.\n3. Set priority by departure time on the booking: URGENT if the flight leaves within 4 hours (or there's a safety issue), HIGH within 24 hours, otherwise NORMAL. Don't set it by how upset the customer sounds.\n4. Tell the customer the case number and estimated wait, and that the agent will see this conversation.\n5. If the result shows the team is outside business hours, give the callback or reopening time from business_hours_note and offer to stay open until then.\n6. After a successful handoff, take no further actions on the booking. Say goodbye and call end_chat with reason HANDED_OFF.",
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "escalate_to_human",
+          "description": "Queue the conversation for a human agent with a summary.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "reason": {
+                "type": "string",
+                "enum": ["CUSTOMER_REQUEST", "VERIFICATION_FAILED", "COMPLAINT", "COMPENSATION_CLAIM", "REFUND_DELAYED", "SPECIAL_ASSISTANCE", "SPECIAL_BAGGAGE", "TOOL_FAILURE", "OUT_OF_SCOPE", "SAFETY_OR_LEGAL"]
+              },
+              "priority": { "type": "string", "enum": ["NORMAL", "HIGH", "URGENT"] },
+              "booking_reference": { "type": "string", "description": "If verified." },
+              "summary": { "type": "string", "description": "2-4 factual sentences for the human agent, including reference numbers." },
+              "customer_sentiment": { "type": "string", "enum": ["CALM", "FRUSTRATED", "DISTRESSED"] }
+            },
+            "required": ["reason", "priority", "summary"],
+            "additionalProperties": false
+          }
+        },
+        "response": {
+          "success": true,
+          "case_number": "CS-2026-1106-48211",
+          "queue": "Baggage & Claims",
+          "estimated_wait_minutes": 12,
+          "handoff_channel": "SAME_CHAT",
+          "business_hours_note": null
+        }
+      }
+    ]
+  }
+]

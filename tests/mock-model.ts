@@ -61,6 +61,17 @@ export function seenBy(model: MockLanguageModelV4, i: number): string[] {
   });
 }
 
+/** The tools model call `i` was offered, by name. */
+export function toolsOfferedTo(model: MockLanguageModelV4, i: number): string[] {
+  return (model.doStreamCalls[i]?.tools ?? []).map((t) => t.name);
+}
+
+/** The system prompt model call `i` was given. */
+export function systemPromptOf(model: MockLanguageModelV4, i: number): string {
+  const system = model.doStreamCalls[i]?.prompt.find((message) => message.role === 'system');
+  return system?.role === 'system' ? system.content : '';
+}
+
 /** A promise a test resolves when it chooses. */
 export function gate<T = void>() {
   return Promise.withResolvers<T>();

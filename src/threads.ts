@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import type { ThreadState } from './skills';
 
 export type UserMessage = { role: 'user'; seq: number; text: string };
 export type StoredMessage =
@@ -9,9 +10,8 @@ export type StoredMessage =
 /** What a turn writes to its thread: a reply, or one tool execution. */
 export type AgentMessage = Exclude<StoredMessage, { role: 'user' }>;
 
-interface Thread {
+export interface Thread extends ThreadState {
   id: string;
-  systemPrompt: string;
   /** The conversation in the order the model sees it. */
   messages: StoredMessage[];
   /**
@@ -36,8 +36,18 @@ interface Thread {
 /** In memory: every thread is gone when the server restarts. */
 const threads = new Map<string, Thread>();
 
-export function createThread(systemPrompt: string): { id: string } {
-  const thread: Thread = { id: randomUUID(), systemPrompt, messages: [], waiting: [], userSeq: 0, seenThroughSeq: 0, answeredThroughSeq: 0, busy: false, waiters: [] };
+export function createThread(): { id: string } {
+  const thread: Thread = {
+    id: randomUUID(),
+    endedAt: null,
+    messages: [],
+    waiting: [],
+    userSeq: 0,
+    seenThroughSeq: 0,
+    answeredThroughSeq: 0,
+    busy: false,
+    waiters: [],
+  };
   threads.set(thread.id, thread);
   return { id: thread.id };
 }
@@ -56,7 +66,6 @@ export function addUserMessage(thread: Thread, text: string): number {
 
 /** A turn this request holds the thread for. `end` must be called once it is over, answered or not. */
 export interface HeldTurn {
-  systemPrompt: string;
   /** The thread as it stands: it ends at every customer message waiting for an answer. */
   history: StoredMessage[];
   record: (message: AgentMessage) => void;
@@ -92,7 +101,6 @@ function beginTurn(thread: Thread): HeldTurn {
   const seenThroughSeq = thread.userSeq;
   thread.seenThroughSeq = seenThroughSeq;
   return {
-    systemPrompt: thread.systemPrompt,
     history: [...thread.messages],
     record: (message) => thread.messages.push(message),
     end: (answered) => {

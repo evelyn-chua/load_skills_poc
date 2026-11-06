@@ -1,0 +1,87 @@
+[
+  {
+    "type": "function",
+    "function": {
+      "name": "load_skill",
+      "description": "Load a skill so you can do a specific job for the customer. Returns the skill's instructions and makes its tools callable from your next turn. Dependencies (e.g. verify_identity) are loaded automatically. Loading an already-loaded skill does nothing.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "skill_name": {
+            "type": "string",
+            "enum": [
+              "verify_identity",
+              "flight_status",
+              "cancel_booking",
+              "reschedule_flight",
+              "baggage",
+              "seat_selection",
+              "check_in",
+              "lost_baggage",
+              "refunds_and_credits",
+              "human_handoff"
+            ],
+            "description": "Name of the skill from the catalog."
+          },
+          "reason": {
+            "type": "string",
+            "description": "One short sentence on what the customer wants that this skill addresses. Used for logging and routing analytics."
+          }
+        },
+        "required": ["skill_name", "reason"],
+        "additionalProperties": false
+      }
+    },
+    "instructions": "Load a skill only once you understand what the customer wants. Load one skill per job, when you reach that job. After loading, follow the returned instructions before doing anything else for that job. Dependencies listed in the result are loaded too; follow the dependency's instructions first (usually verification).",
+    "response": {
+      "success": true,
+      "skill_name": "cancel_booking",
+      "already_loaded": false,
+      "dependencies_loaded": ["verify_identity"],
+      "tools_added": ["get_booking", "get_cancellation_quote", "cancel_segments"],
+      "instructions": {
+        "verify_identity": "<verify_identity.instructions from skills.json>",
+        "cancel_booking": "<cancel_booking.instructions from skills.json>"
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "end_chat",
+      "description": "End the conversation and close the chat session. The customer cannot send further messages afterwards. Send your goodbye message before calling this.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "enum": ["RESOLVED", "CUSTOMER_ENDED", "HANDED_OFF", "INACTIVE", "ABUSIVE", "OUT_OF_SCOPE"],
+            "description": "Why the chat is ending."
+          },
+          "resolved": {
+            "type": "boolean",
+            "description": "True if every request the customer raised was completed."
+          },
+          "skills_used": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Skills loaded during the conversation."
+          },
+          "summary": {
+            "type": "string",
+            "description": "2-3 sentence factual summary of what the customer wanted, what was done, and any reference numbers."
+          }
+        },
+        "required": ["reason", "resolved", "summary"],
+        "additionalProperties": false
+      }
+    },
+    "instructions": "Only call after the customer confirms they need nothing else or says goodbye, after a handoff completes, after one unanswered check-in (INACTIVE), or after one ignored warning about abusive language (ABUSIVE). Never call with a confirmation pending or a question unanswered. Send the goodbye message first.",
+    "response": {
+      "success": true,
+      "conversation_id": "CONV-20261106-77310",
+      "ended_at_utc": "2026-11-06T15:42:10Z",
+      "survey_sent": true
+    }
+  }
+]

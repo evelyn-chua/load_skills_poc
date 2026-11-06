@@ -1,31 +1,32 @@
 import { Hono } from 'hono';
-import type { LanguageModel, ToolSet } from 'ai';
+import type { LanguageModel } from 'ai';
 import { z } from 'zod';
-import { runTurn } from './agent';
-import { addUserMessage, createThread, getThread, waitForTurn, type StoredMessage } from './threads';
+import { runTurn, toModelMessages } from './agent';
+import type { AgentConfig } from './config';
+import { createSkillAgent, END_CHAT, latestLoadedSkill } from './skills';
 import type { PhoenixTracing } from './tracing';
+import { addUserMessage, createThread, getThread, waitForTurn, type StoredMessage } from './threads';
 
-const CreateThreadBody = z.object({ system_prompt: z.string().min(1) });
 const MessageBody = z.object({ text: z.string().min(1) });
 
-export function createApp({ model, tools, tracing }: { model: LanguageModel; tools: ToolSet; tracing?: PhoenixTracing | null }): Hono {
+export function createApp({ model, config, tracing }: { model: LanguageModel; config: AgentConfig; tracing?: PhoenixTracing | null }): Hono {
   const app = new Hono();
+  const agent = createSkillAgent(config);
 
-  app.post('/threads', async (c) => {
-    const body = CreateThreadBody.safeParse(await c.req.json().catch(() => null));
-    if (!body.success) return c.json({ error: 'system_prompt is required' }, 400);
-    return c.json({ thread_id: createThread(body.data.system_prompt).id }, 201);
-  });
+  /** Starts a conversation with the agent in `config/`. */
+  app.post('/threads', (c) => c.json({ thread_id: createThread().id }, 201));
 
   /**
    * Sends a customer message and returns the agent's replies, one per step: JSON, or a streamed
    * AI SDK UI message stream with `?stream=true`. A message sent while the agent is still answering
    * waits, and is answered together with every other waiting message on the newest one's request;
-   * the older requests get `{ replies: [], answered_with_later_message: true }` as JSON.
+   * the older requests get `{ replies: [], answered_with_later_message: true }` as JSON. Once the
+   * agent has called end_chat, the thread takes no more messages (409).
    */
   app.post('/threads/:id/messages', async (c) => {
     const thread = getThread(c.req.param('id'));
     if (!thread) return c.json({ error: 'Thread not found' }, 404);
+    if (thread.endedAt) return c.json({ error: 'This chat has ended.' }, 409);
     const body = MessageBody.safeParse(await c.req.json().catch(() => null));
     if (!body.success) return c.json({ error: 'text is required' }, 400);
 
@@ -36,8 +37,9 @@ export function createApp({ model, tools, tracing }: { model: LanguageModel; too
     const { turn } = slot;
     const { result, done } = runTurn({
       model,
-      tools,
-      systemPrompt: turn.systemPrompt,
+      tools: agent.tools(thread),
+      prepare: (messages) => agent.current(latestLoadedSkill(messages)),
+      finalTools: [END_CHAT],
       history: turn.history,
       record: turn.record,
       // Each span names its conversation, so Phoenix groups a thread's turns into one session.
@@ -57,17 +59,28 @@ export function createApp({ model, tools, tracing }: { model: LanguageModel; too
       finished.catch((error: unknown) => console.error('[chat-agent] streamed turn failed', error));
       return result.toUIMessageStreamResponse();
     }
-    return c.json({ replies: await finished });
+    const replies = await finished;
+    return c.json({ replies, ended: thread.endedAt !== null });
   });
 
   /**
-   * The whole transcript, in the order the model sees it: customer messages, replies, and every
-   * tool call with its arguments and output. Messages no turn has read yet come last.
+   * The thread as the agent stands now: the applied skill, the tools and system prompt the model will
+   * see on its next step, and the whole transcript in the order the model sees it (customer messages,
+   * replies, and every tool call with its arguments and output; messages no turn has read come last).
    */
   app.get('/threads/:id', (c) => {
     const thread = getThread(c.req.param('id'));
     if (!thread) return c.json({ error: 'Thread not found' }, 404);
-    return c.json({ thread_id: thread.id, system_prompt: thread.systemPrompt, messages: [...thread.messages, ...thread.waiting].map(toJson) });
+    const skill = latestLoadedSkill(toModelMessages(thread.messages));
+    const { instructions, activeTools } = agent.current(skill);
+    return c.json({
+      thread_id: thread.id,
+      active_skill: skill,
+      active_tools: activeTools,
+      ended: thread.endedAt !== null,
+      system_prompt: instructions,
+      messages: [...thread.messages, ...thread.waiting].map(toJson),
+    });
   });
 
   app.onError((error, c) => {

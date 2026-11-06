@@ -19,8 +19,17 @@
     aside { display: flex; flex-direction: column; gap: 10px; padding: 16px; border-right: 1px solid var(--border); background: var(--panel); }
     h1 { margin: 0 0 6px; font-size: 16px; }
     label { font-size: 13px; color: var(--muted); }
-    textarea, input { width: 100%; font: inherit; color: inherit; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 9px 10px; }
-    textarea { min-height: 220px; resize: vertical; }
+    input { width: 100%; font: inherit; color: inherit; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 9px 10px; }
+    .state { display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
+    .state b { font-weight: 600; }
+    .chips { display: flex; flex-wrap: wrap; gap: 4px; }
+    .chip { padding: 2px 8px; border-radius: 999px; background: var(--agent); font: 12px ui-monospace, monospace; }
+    .chip.common { opacity: .65; }
+    details { font-size: 13px; min-height: 0; display: flex; flex-direction: column; }
+    details[open] { flex: 1; }
+    summary { cursor: pointer; color: var(--muted); }
+    pre { margin: 6px 0 0; padding: 8px; overflow: auto; max-height: 45vh; white-space: pre-wrap; font: 11px/1.45 ui-monospace, monospace; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; }
+    .hint { margin-top: auto; font-size: 12px; color: var(--muted); }
     button { font: inherit; padding: 9px 14px; border: 0; border-radius: 8px; background: var(--user); color: #fff; cursor: pointer; }
     button:disabled, input:disabled { opacity: .5; cursor: default; }
     #thread { font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
@@ -40,13 +49,21 @@
 <body>
   <aside>
     <h1>Chat Agent POC</h1>
-    <label for="prompt">System prompt</label>
-    <textarea id="prompt">You are a friendly support agent for Acme Telco. Keep replies short.</textarea>
     <button id="start">Start new conversation</button>
     <div id="thread"></div>
+    <div class="state">
+      <div><b>Active skill:</b> <span id="skill">none</span></div>
+      <div><b>Tools offered</b></div>
+      <div class="chips" id="tools"></div>
+    </div>
+    <details id="prompt-box">
+      <summary>System prompt the model sees next</summary>
+      <pre id="prompt"></pre>
+    </details>
+    <div class="hint">The agent, its skills and tools come from <code>config/</code>. Skill tools return mock data: try booking <b>K7XQ2M</b>, last name <b>Rivera</b>.</div>
   </aside>
   <main>
-    <div id="messages"><div class="note">Write a system prompt and start a conversation.</div></div>
+    <div id="messages"><div class="note">Start a conversation to talk to Mia, Meridian Air's support agent.</div></div>
     <div id="typing"></div>
     <form id="composer">
       <input id="text" placeholder="Type a message… (you can send several before the agent replies)" autocomplete="off" disabled>
@@ -79,11 +96,7 @@
     }
 
     $('start').addEventListener('click', async () => {
-      const res = await fetch('/threads', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ system_prompt: $('prompt').value }),
-      });
+      const res = await fetch('/threads', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' });
       const body = await res.json();
       if (!res.ok) return add('error', body.error);
       threadId = body.thread_id;
@@ -93,7 +106,26 @@
       $('thread').replaceChildren(`Thread ${threadId} · `, link);
       $('text').disabled = $('send').disabled = false;
       $('text').focus();
+      await refreshState();
     });
+
+    /** Shows the agent's state after a turn: the applied skill, the tools offered, the system prompt. */
+    async function refreshState() {
+      const res = await fetch(`/threads/${threadId}`);
+      if (!res.ok) return;
+      const thread = await res.json();
+      $('skill').textContent = thread.active_skill ?? 'none';
+      $('tools').replaceChildren(
+        ...thread.active_tools.map((name) =>
+          Object.assign(document.createElement('span'), { className: ['load_skill', 'end_chat'].includes(name) ? 'chip common' : 'chip', textContent: name }),
+        ),
+      );
+      $('prompt').textContent = thread.system_prompt;
+      if (thread.ended && !$('text').disabled) {
+        $('text').disabled = $('send').disabled = true;
+        add('note', 'The agent ended the chat.');
+      }
+    }
 
     $('composer').addEventListener('submit', (event) => {
       event.preventDefault();
@@ -121,7 +153,12 @@
         add('error', String(error));
       } finally {
         setPending(-1);
+        await refreshState();
       }
+    }
+
+    function clip(text, max = 160) {
+      return text.length > max ? `${text.slice(0, max)}…` : text;
     }
 
     /** Renders an AI SDK UI message stream: each step is its own reply bubble, and tool calls show as grey lines. */
@@ -151,10 +188,10 @@
                 scrollDown();
                 break;
               case 'tool-input-available':
-                toolLines.set(chunk.toolCallId, add('tool', `🔧 ${chunk.toolName}(${JSON.stringify(chunk.input)})`));
+                toolLines.set(chunk.toolCallId, add('tool', `🔧 ${chunk.toolName}(${clip(JSON.stringify(chunk.input))})`));
                 break;
               case 'tool-output-available':
-                toolLines.get(chunk.toolCallId)?.append(` → ${JSON.stringify(chunk.output)}`);
+                toolLines.get(chunk.toolCallId)?.append(` → ${clip(JSON.stringify(chunk.output))}`);
                 break;
               case 'tool-output-error':
                 toolLines.get(chunk.toolCallId)?.append(` → error: ${chunk.errorText}`);

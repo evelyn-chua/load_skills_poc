@@ -11,10 +11,11 @@ const lookupOrder = (execute: (args: { order_id: string }) => Promise<unknown>) 
 
 function turn(model: ReturnType<typeof scriptedModel>, opts: { tools?: ReturnType<typeof lookupOrder>; history?: StoredMessage[] } = {}) {
   const recorded: AgentMessage[] = [];
+  const tools = opts.tools ?? {};
   const { done } = runTurn({
     model,
-    tools: opts.tools ?? {},
-    systemPrompt: 'You are a support agent.',
+    tools,
+    prepare: () => ({ instructions: 'You are a support agent.', activeTools: Object.keys(tools) }),
     history: opts.history ?? [{ role: 'user', seq: 1, text: 'hi' }],
     record: (message) => recorded.push(message),
   });

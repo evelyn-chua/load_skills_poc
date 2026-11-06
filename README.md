@@ -1,8 +1,18 @@
 # chat-agent
 
-A POC chat agent extracted from Voice Agent Studio. Create a thread with a system prompt, then hold
-a conversation with it over HTTP or the built-in chat page. The server stores the thread, runs the
-agent's tools, and calls Baseten (`zai-org/GLM-5.3-Flash`) on its OpenAI-compatible Chat Completions API. Design: [`docs/design.md`](docs/design.md).
+A POC of a single chat agent that loads **skills** as it needs them (ENG-684). The agent starts
+with a base prompt and two tools, `load_skill` and `end_chat`. Loading a skill replaces the active
+skill's instructions and tools with the new one's, from the next model call on.
+
+The agent is defined in `config/`:
+
+- `system_prompt.md`: the base prompt
+- `primary_tools.json`: the common tools
+- `skills.json`: the skills and their mock tools
+
+Underneath is a minimal chat server extracted from Voice Agent Studio. It stores the thread, runs
+tools on the server, calls Baseten (`zai-org/GLM-5.3-Flash`), and traces every turn to Phoenix.
+Design: [`docs/design.md`](docs/design.md).
 
 ## Run
 
@@ -13,35 +23,24 @@ pnpm dev                # chat page at http://localhost:3000
 pnpm test
 ```
 
-The chat page (`public/index.html`) takes a system prompt, starts a thread, and streams the
-agent's replies, one bubble per step, with tool calls as grey lines. You can send several messages
-before the agent replies.
+The chat page shows the conversation, each tool call, and live, on the left: the applied skill, the
+tools the model is offered, and the system prompt it sees next. Skill tools return mock data from
+`config/skills.json`: use booking **K7XQ2M**, last name **Rivera**.
 
-With `OTLP_ENDPOINT` and `OTLP_API_KEY` set, each turn appears in Phoenix (Arize) under the project
+With `OTLP_ENDPOINT` and `OTLP_API_KEY` set, each turn appears in Phoenix under the project
 `load-skills-poc`, and a conversation's turns are grouped into one session.
 
-## Talk to it
+## Talk to it over HTTP
 
 ```bash
-# start a conversation
-curl -s -X POST localhost:3000/threads -H 'content-type: application/json' \
-  -d '{"system_prompt":"You are a friendly support agent for Acme."}'
-# → {"thread_id":"…"}
+THREAD=$(curl -s -X POST localhost:3000/threads -H 'content-type: application/json' -d '{}' | jq -r .thread_id)
 
-# send a message
 curl -s -X POST localhost:3000/threads/$THREAD/messages -H 'content-type: application/json' \
-  -d '{"text":"Hi, what can you help me with?"}'
-# → {"replies":["Hi! I can help with …"]}
+  -d '{"text":"I need to cancel my trip. K7XQ2M, Rivera."}'
+# → {"replies":["Let me pull that up.", "Thanks, Jordan. …"],"ended":false}
 
-# the same, streamed
-curl -N -X POST "localhost:3000/threads/$THREAD/messages?stream=true" -H 'content-type: application/json' \
-  -d '{"text":"Tell me more"}'
-
-# the transcript, tool calls included
-curl -s localhost:3000/threads/$THREAD
+curl -s localhost:3000/threads/$THREAD | jq '{active_skill, active_tools}'
+# → {"active_skill":"cancel_booking","active_tools":["load_skill","end_chat","get_booking",…]}
 ```
 
-## Add a tool
-
-Add an entry to `src/tools.ts`. The server runs it whenever the model asks for it, and stores each
-call in the thread.
+Add `?stream=true` to a message request to stream the reply.
