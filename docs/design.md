@@ -10,7 +10,7 @@ server:
 
 - stores the thread
 - runs the agent's tools
-- calls the LLM on the Chat Completions API (OpenAI)
+- calls the LLM on the Chat Completions API (Baseten, `zai-org/GLM-5.3-Flash`)
 
 Studio sources:
 
@@ -25,7 +25,7 @@ Studio sources:
 | Server-run tools, one model call per step | `end_chat`, follow-ups, recovery, idle nudges |
 | JSON or streamed replies, and a one-page chat UI | A CLI, a production UI |
 | Several customer messages answered together | Quiet window, multi-server locking, push delivery |
-| `GET /threads/:id` transcript | Other providers, reasoning settings, token usage |
+| `GET /threads/:id` transcript | Other providers, token usage |
 
 ## Modules
 
@@ -35,7 +35,7 @@ src/
   app.ts       HTTP routes (Hono)
   threads.ts   in-memory threads, and one turn per thread at a time  ← thread-turns.ts
   agent.ts     one turn: streamText tool loop, per-step recording   ← core.ts
-  model.ts     the OpenAI model (Chat Completions)
+  model.ts     the Baseten model (OpenAI-compatible Chat Completions)
   tools.ts     the tools the agent can call: add yours here
 public/
   index.html   the chat page: plain HTML + JS, reads the streamed replies; no build step
@@ -44,6 +44,14 @@ tests/         Vitest with the AI SDK's mock model: the real loop runs, no netwo
 
 `agent.ts` knows nothing about HTTP or storage. It takes a model, tools, a system prompt and the
 history, and reports each message through `record`.
+
+## Model
+
+`zai-org/GLM-5.3-Flash` on Baseten (Studio's default chat model), with `reasoning_effort: "low"` sent
+in every request body, as Studio sends it.
+
+- The model's reasoning text is not read; only its answer is.
+- Configured by `BASETEN_API_KEY`, `BASETEN_MODEL` and `BASETEN_REASONING_EFFORT`.
 
 ## API
 

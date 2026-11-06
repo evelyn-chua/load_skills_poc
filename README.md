@@ -2,13 +2,13 @@
 
 A POC chat agent extracted from Voice Agent Studio. Create a thread with a system prompt, then hold
 a conversation with it over HTTP or the built-in chat page. The server stores the thread, runs the
-agent's tools, and calls OpenAI on the Chat Completions API. Design: [`docs/design.md`](docs/design.md).
+agent's tools, and calls Baseten (`zai-org/GLM-5.3-Flash`) on its OpenAI-compatible Chat Completions API. Design: [`docs/design.md`](docs/design.md).
 
 ## Run
 
 ```bash
 pnpm install
-cp .env.example .env    # fill in OPENAI_API_KEY (Studio's .env has one) and OPENAI_MODEL
+cp .env.example .env    # fill in BASETEN_API_KEY (Studio's .env has one)
 pnpm dev                # chat page at http://localhost:3000
 pnpm test
 ```
